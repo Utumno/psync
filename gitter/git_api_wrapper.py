@@ -37,7 +37,7 @@ class Git(object):
                         exclude.write(str(path) + '\n')
             try:
                 _g.add('-A')
-                _g.commit("Initial commit")
+                _g.commit(m="Initial commit")
             except exc.GitCommandError:
                 pass
 
