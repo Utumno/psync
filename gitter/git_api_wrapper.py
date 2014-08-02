@@ -42,5 +42,4 @@ class Git(object):
         pass
 
     def dir(self):
-        repo_git_dir = self.repo.git_dir
-        return repo_git_dir
+        return self.repo.git_dir
