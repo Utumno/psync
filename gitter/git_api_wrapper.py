@@ -1,15 +1,12 @@
 import datetime
-
-__author__ = 'MrD'
+import os
 
 from  git import Repo, InvalidGitRepositoryError
 from  git import cmd, exc
-import os
 
 class Git(object):
-
     def __init__(self, path, ignored_files=None):
-        print path
+        print 'path', path
         dir_ = os.path.abspath(path)
         if not os.path.exists(dir_):
             os.makedirs(dir_)
@@ -17,35 +14,33 @@ class Git(object):
             raise RuntimeError(dir_ + "is not a directory")
         try:  # http://stackoverflow.com/a/23666860/281545
             self.repo = Repo(dir_)
-            self._g = _g = cmd.Git(dir_)
-            try:
-                _g.add('-A')
-                _g.commit(str(datetime.date.today))
-            except exc.GitCommandError:
-                # see: http://stackoverflow.com/a/21078070/281545
-                pass
+            self._g = cmd.Git(dir_)
+            self.commitAll(
+                msg=str(datetime.date.today) + '- batch committing changes')
         except InvalidGitRepositoryError:
             print 'isn`t git repo'
             self._g = _g = cmd.Git(dir_)
             _g.init()
-            self.repo = repo = Repo()
+            self.repo = repo = Repo(dir_)
             if ignored_files:
-                with open(os.path.join(repo.git_dir,"/info/exclude"),
-                          'w') as exclude:
-                    exclude.truncate()
+                exclude = os.path.join(repo.git_dir, "info", "exclude")
+                print 'exclude', exclude
+                with open(exclude, 'w') as excl:  # 'w' will truncate
                     for path in ignored_files:
-                        exclude.write(str(path) + '\n')
-            try:
-                _g.add('-A')
-                _g.commit(m="Initial commit")
-            except exc.GitCommandError:
-                pass
+                        excl.write(path + "\n")
+            self.commitAll(msg="Initial commit")
 
-    def commit(self, message):
-        pass
+    def commitAll(self, msg):
+        try:
+            self._g.add('-A')
+            self._g.commit(m=msg)
+        except exc.GitCommandError:
+            # see: http://stackoverflow.com/a/21078070/281545
+            pass
 
     def getIgnoredPaths(self, message):
-        from  git import cmd
+        pass
+
     def dir(self):
         repo_git_dir = self.repo.git_dir
         return repo_git_dir
