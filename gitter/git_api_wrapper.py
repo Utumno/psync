@@ -5,6 +5,22 @@ from  git import Repo, InvalidGitRepositoryError
 from  git import cmd, exc
 
 class Git(object):
+
+    class _Excluder(object):
+        # TODO: be able to exclude files that were not initially excluded
+
+        def __init__(self, ignored_files, repo):
+            self._exclude = exclude = os.path.join(repo.git_dir, "info", "exclude")
+            with open(exclude, 'w') as excl:  # 'w' will truncate
+                # TODO: unix newlines
+                for path in ignored_files:
+                    excl.write(path + "\n")
+
+        def getIgnoredPaths(self):
+            with open(self._exclude, 'r') as excl:
+                # http://stackoverflow.com/a/22123823/281545
+                return excl.read().splitlines()
+
     def __init__(self, path, ignored_files=None):
         print 'path', path
         dir_ = os.path.abspath(path)
@@ -22,12 +38,7 @@ class Git(object):
             self._g = _g = cmd.Git(dir_)
             _g.init()
             self.repo = repo = Repo(dir_)
-            if ignored_files:
-                exclude = os.path.join(repo.git_dir, "info", "exclude")
-                print 'exclude', exclude
-                with open(exclude, 'w') as excl:  # 'w' will truncate
-                    for path in ignored_files:
-                        excl.write(path + "\n")
+            self._excluder = self._Excluder(ignored_files, repo)
             self.commitAll(msg="Initial commit")
 
     def commitAll(self, msg):
@@ -38,8 +49,8 @@ class Git(object):
             # see: http://stackoverflow.com/a/21078070/281545
             pass
 
-    def getIgnoredPaths(self, message):
-        pass
+    def getIgnoredPaths(self):
+        return self._excluder.getIgnoredPaths
 
     def dir(self):
         return self.repo.git_dir
