@@ -1,25 +1,34 @@
 import datetime
+import fnmatch
 import os
 
 from  git import Repo, InvalidGitRepositoryError
 from  git import cmd, exc
 
 class Git(object):
-
     class _Excluder(object):
         # TODO: be able to exclude files that were not initially excluded
 
         def __init__(self, ignored_files, repo):
-            self._exclude = exclude = os.path.join(repo.git_dir, "info", "exclude")
-            with open(exclude, 'w') as excl:  # 'w' will truncate
-                # TODO: unix newlines
+            # path to the .git/info/exclude file
+            self._exclude = exclude = os.path.join(repo.git_dir, "info",
+                                                   "exclude")
+            print "exclude", exclude
+            flag = 'wb' if not os.path.exists(
+                exclude) else 'ab'  # 'w' will truncate - 'wb' for unix
+                # newlines
+            with open(exclude, flag) as excl:
                 for path in ignored_files:
                     excl.write(path + "\n")
 
         def getIgnoredPaths(self):
+            excl_regex_patterns = []
             with open(self._exclude, 'r') as excl:
                 # http://stackoverflow.com/a/22123823/281545
-                return excl.read().splitlines()
+                excl_lines = excl.read().splitlines()
+                for line in excl_lines:
+                    excl_regex_patterns.append(fnmatch.translate(line))
+            return excl_regex_patterns
 
     def __init__(self, path, ignored_files=None):
         print 'path', path
@@ -29,8 +38,9 @@ class Git(object):
         elif not os.path.isdir(dir_):
             raise RuntimeError(dir_ + "is not a directory")
         try:  # http://stackoverflow.com/a/23666860/281545
-            self.repo = Repo(dir_)
+            self.repo = repo = Repo(dir_)
             self._g = cmd.Git(dir_)
+            self._excluder = self._Excluder(ignored_files, repo)
             self.commitAll(
                 msg=str(datetime.date.today) + '- batch committing changes')
         except InvalidGitRepositoryError:
@@ -50,7 +60,7 @@ class Git(object):
             pass
 
     def getIgnoredPaths(self):
-        return self._excluder.getIgnoredPaths
+        return self._excluder.getIgnoredPaths()
 
     def dir(self):
         return self.repo.git_dir
