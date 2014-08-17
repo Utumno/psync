@@ -11,8 +11,9 @@ class Parser(argparse.ArgumentParser):
         subparsers._parser_class = argparse.ArgumentParser
         parsers = []
         # print watcher.commands
-        # for parser in watcher.commands:
-        # parsers.append(parser(subparsers))
+        from  watcher.commands import CMDS
+        for cmd in CMDS:
+            parsers.append(cmd()(subparsers))
 
     @staticmethod
     def new(description, add_help=True):
