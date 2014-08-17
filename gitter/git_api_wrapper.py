@@ -6,18 +6,19 @@ from  git import Repo, InvalidGitRepositoryError
 from  git import cmd, exc
 
 class Git(object):
+
     class _Excluder(object):
         # TODO: be able to exclude files that were not initially excluded
+        # TODO: filter duplicate paths/subpaths
 
-        def __init__(self, ignored_files, repo):
+        def __init__(self, ignored_files, repo, append=False):
             # path to the .git/info/exclude file
             self._exclude = exclude = os.path.join(repo.git_dir, "info",
                                                    "exclude")
             print "exclude", exclude
-            flag = 'wb' if not os.path.exists(
-                exclude) else 'ab'  # 'w' will truncate - 'wb' for unix
-                # newlines
-            with open(exclude, flag) as excl:
+            mode = 'ab' if append else 'wb'  # 'w' will truncate - 'wb' for unix
+            # newlines
+            with open(exclude, mode) as excl:
                 for path in ignored_files:
                     excl.write(path + "\n")
 
@@ -40,7 +41,7 @@ class Git(object):
         try:  # http://stackoverflow.com/a/23666860/281545
             self.repo = repo = Repo(dir_)
             self._g = cmd.Git(dir_)
-            self._excluder = self._Excluder(ignored_files, repo)
+            self._excluder = self._Excluder(ignored_files, repo, append=True)
             self.commitAll(
                 msg=str(datetime.date.today) + '- batch committing changes')
         except InvalidGitRepositoryError:
