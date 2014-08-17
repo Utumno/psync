@@ -1,8 +1,9 @@
+from watcher.cli import Parser
+
 __author__ = 'https://github.com/gorakhargosh/watchdog'
 import sys
-import time
 import logging
-
+import shlex
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
@@ -52,9 +53,16 @@ if __name__ == "__main__":
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
+    parser = Parser.new(description='Monitor and sync directory changes')
     try:
         while True:
-            time.sleep(1)
+            # http://stackoverflow.com/a/17352877/281545
+            cmd = shlex.split(raw_input('> ').strip())
+            print cmd
+            try:
+                print parser.parse(cmd)
+            except SystemExit: # DUH http://stackoverflow.com/q/16004901/281545
+                pass
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
