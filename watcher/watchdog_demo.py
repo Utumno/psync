@@ -42,13 +42,13 @@ class TestEventHandler(PatternMatchingEventHandler):
         logging.info("Modified %s: %s", what, event.src_path)
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
+    logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
     path = sys.argv[1] if len(sys.argv) > 1 else '../../sandbox'
     git = git_api_wrapper.Git(path, ignored_files=("lol/*",))
     ignored = git.getIgnoredPaths()
-    print ignored
+    logging.debug(ignored)
     ignored.append("*.git*")
     event_handler = TestEventHandler(ignore_patterns=ignored)
     observer = Observer()
@@ -59,9 +59,9 @@ if __name__ == "__main__":
         while True:
             # http://stackoverflow.com/a/17352877/281545
             cmd = shlex.split(raw_input('> ').strip())
-            print cmd
+            logging.debug('command line: %s', cmd)
             try:
-                print parser.parse(cmd)
+                parser.parse(cmd)
             except SystemExit: # DUH http://stackoverflow.com/q/16004901/281545
                 pass
     except KeyboardInterrupt:
