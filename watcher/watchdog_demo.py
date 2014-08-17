@@ -46,10 +46,11 @@ if __name__ == "__main__":
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
     path = sys.argv[1] if len(sys.argv) > 1 else '../../sandbox'
-    git = git_api_wrapper.Git(path, ignored_files=("lol/",))
+    git = git_api_wrapper.Git(path, ignored_files=("lol/*",))
     ignored = git.getIgnoredPaths()
     print ignored
-    event_handler = TestEventHandler(ignore_patterns=("*.git*","*lol*",))
+    ignored.append("*.git*")
+    event_handler = TestEventHandler(ignore_patterns=ignored)
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
