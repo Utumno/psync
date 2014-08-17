@@ -1,11 +1,14 @@
 import argparse
+import logging
+from watcher.watchdog_demo import Sync
 
 class Watch(object):
 
     class _WatchAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            # print '%r %r %r' % (namespace, values, option_string)
+            logging.debug('%r %r %r' % (namespace, values, option_string))
             setattr(namespace, self.dest, values)
+            Sync.addObserver(path=values)
 
     class _Arg(object):
         def __init__(self, hlp=None, action='store'):
