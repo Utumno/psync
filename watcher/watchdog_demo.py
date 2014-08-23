@@ -1,5 +1,6 @@
 import logging
 import shlex
+import os
 from watchdog.observers import Observer
 
 # internal imports
@@ -8,8 +9,12 @@ from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
 
 class Sync():
+    observers = []
+    watches = []
 
-    observers=[]
+    class _Tree(object):
+        def __init__(self, path):
+            self.root = os.path.abspath(path)
 
     def __init__(self):
         logging.basicConfig(level=logging.DEBUG,
@@ -35,6 +40,22 @@ class Sync():
 
     @staticmethod
     def addObserver(path='../../sandbox', ignored_files=("lol/*",)):
+        abspath = os.path.abspath(path)
+        logging.debug("User given path: %s -> %s" % (path, abspath))
+        if not os.path.exists(abspath):
+            logging.info("Creating directory %s" % abspath)
+            os.makedirs(abspath)
+        elif not os.path.isdir(abspath):
+            logging.warn("%s is not a directory" % abspath)
+            return
+        for watch in Sync.watches:
+            if abspath.startswith(watch.root + '/'):
+                # TODO: check parent folders
+                logging.warn(
+                    "%s is a subpath of %s which you already watch" % (
+                    path, abspath))
+                return
+        # FIXME - time of check time of use - lock the dir for deletion ?
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
         ignored = git.getIgnoredPaths()
         logging.debug(ignored)

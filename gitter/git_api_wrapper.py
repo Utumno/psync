@@ -31,13 +31,9 @@ class Git(object):
                     excl_regex_patterns.append(fnmatch.translate(line))
             return excl_regex_patterns
 
-    def __init__(self, path, ignored_files=None):
-        print 'path', path
-        dir_ = os.path.abspath(path)
-        if not os.path.exists(dir_):
-            os.makedirs(dir_)
-        elif not os.path.isdir(dir_):
-            raise RuntimeError(dir_ + "is not a directory")
+    def __init__(self, dir_, ignored_files=None):
+        if not os.path.isdir(dir_): raise RuntimeError(
+            "%s is not a directory" % dir_)
         try:  # http://stackoverflow.com/a/23666860/281545
             self.repo = repo = Repo(dir_)
             self._g = cmd.Git(dir_)
