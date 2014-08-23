@@ -2,7 +2,6 @@ import logging
 import shlex
 import os
 from watchdog.observers import Observer
-
 # internal imports
 from watcher.cli import Parser
 from gitter import git_api_wrapper
@@ -28,7 +27,8 @@ class Sync():
                 logging.debug('command line: %s', cmd)
                 try:
                     parser.parse(cmd)
-                except SystemExit: # DUH http://stackoverflow.com/q/16004901/281545
+                except SystemExit:  # DUH
+                # http://stackoverflow.com/q/16004901/281545
                     pass
         except KeyboardInterrupt:
             pass

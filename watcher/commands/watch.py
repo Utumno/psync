@@ -3,7 +3,6 @@ import logging
 from watcher.commands.command import Command, Arg
 from watcher.watchdog_demo import Sync
 
-
 class Watch(Command):
     class _WatchAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):

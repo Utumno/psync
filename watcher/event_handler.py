@@ -7,7 +7,7 @@ class TestEventHandler(RegexMatchingEventHandler):
     def __init__(self, ignore_regexes=(".*\.git.*",)):
         """
 
-        :param ignore_patterns: a list/tuple of wildcard patterns - see
+        :param ignore_regexes: a list/tuple of wildcard patterns - see
         Python27\Lib\site-packages\pathtools\patterns.py.match_path
         """
         super(TestEventHandler, self).__init__(ignore_regexes=ignore_regexes)

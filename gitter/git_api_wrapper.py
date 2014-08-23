@@ -1,12 +1,9 @@
 import datetime
 import fnmatch
 import os
-
-from  git import Repo, InvalidGitRepositoryError
-from  git import cmd, exc
+from  git import Repo, InvalidGitRepositoryError, cmd, exc
 
 class Git(object):
-
     class _Excluder(object):
         # TODO: be able to exclude files that were not initially excluded
         # TODO: filter duplicate paths/subpaths
@@ -16,8 +13,8 @@ class Git(object):
             self._exclude = exclude = os.path.join(repo.git_dir, "info",
                                                    "exclude")
             print "exclude", exclude
-            mode = 'ab' if append else 'wb'  # 'w' will truncate - 'wb' for unix
-            # newlines
+            mode = 'ab' if append else 'wb'  # 'w' will truncate - 'b' for
+            # unix newlines
             with open(exclude, mode) as excl:
                 for path in ignored_files:
                     excl.write(path + "\n")
