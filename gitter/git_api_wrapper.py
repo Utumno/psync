@@ -1,5 +1,6 @@
 import datetime
 import fnmatch
+import logging
 import os
 from  git import Repo, InvalidGitRepositoryError, cmd, exc
 
@@ -12,11 +13,12 @@ class Git(object):
             # path to the .git/info/exclude file
             self._exclude = exclude = os.path.join(repo.git_dir, "info",
                                                    "exclude")
-            print "exclude", exclude
+            logging.debug("Exclude file: %s", exclude)
             mode = 'ab' if append else 'wb'  # 'w' will truncate - 'b' for
             # unix newlines
             with open(exclude, mode) as excl:
                 for path in ignored_files:
+                    # TODO check that paths are subpaths and valid
                     excl.write(path + "\n")
 
         def getIgnoredPaths(self):
@@ -38,7 +40,8 @@ class Git(object):
             self.commitAll(
                 msg=str(datetime.date.today) + '- batch committing changes')
         except InvalidGitRepositoryError:
-            print 'isn`t git repo'
+            # TODO: name the dir .sync instead of .git
+            logging.info('%s isn`t git repo', dir_)
             self._g = _g = cmd.Git(dir_)
             _g.init()
             self.repo = repo = Repo(dir_)
