@@ -55,11 +55,11 @@ class Sync(object):
             logging.warn("%s is not a directory" % abspath)
             return
         for watch in Sync.watches:
-            if abspath.startswith(watch.root + '/'):
+            if abspath.startswith(watch.root + os.path.sep):
                 # TODO: check parent folders
                 logging.warn(
                     "%s is a subpath of %s which you already watch" % (
-                    path, abspath))
+                    path, watch.root))
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
