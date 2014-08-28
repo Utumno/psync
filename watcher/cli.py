@@ -1,9 +1,9 @@
 import argparse
 
 class Parser(argparse.ArgumentParser):
-    def __init__(self, desc, add_h=True):
-        super(Parser, self).__init__(description=desc, add_help=add_h,
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    def __init__(self, description, add_h=True):
+        super(Parser, self).__init__(description=description, add_help=add_h,
+                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         # https://docs.python.org/dev/library/argparse.html#sub-commands
         self.subparsers = subparsers = self.add_subparsers(
             help='sub-command help')
@@ -14,10 +14,6 @@ class Parser(argparse.ArgumentParser):
         from  watcher.commands import CMDS
         for cmd in CMDS:
             parsers.append(cmd()(subparsers))
-
-    @staticmethod
-    def new(description, add_help=True):
-        return Parser(description, add_help)
 
     def parse(self, args):
         """

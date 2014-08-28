@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 import logging
 import shlex
 import os
@@ -7,8 +8,13 @@ from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
 
-class Sync():
+class Sync(object):
+    """Static class that keeps all the state of the running application.
+    TODO: add persistent state (an ini ?)
+    """
+    # observers are threads - on exiting shut them down
     observers = []
+    # _Tree classes that keep info on directory trees being watched
     watches = []
 
     class _Tree(object):
@@ -19,7 +25,7 @@ class Sync():
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
-        parser = Parser.new(description='Monitor and sync directory changes')
+        parser = Parser(description='Monitor and sync directory changes')
         try:
             while True:
                 # http://stackoverflow.com/a/17352877/281545
@@ -65,6 +71,7 @@ class Sync():
         observer.schedule(event_handler, path, recursive=True)
         observer.start()
         Sync.observers.append(observer)
+        Sync.watches.append(Sync._Tree(abspath))
 
 if __name__ == "__main__":
     Sync()
