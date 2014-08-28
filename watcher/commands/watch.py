@@ -1,7 +1,7 @@
 import argparse
 import logging
 from watcher.commands.command import Command, Arg
-from watcher.watchdog_demo import Sync
+from watcher.sync import Sync
 
 class Watch(Command):
     class _WatchAction(argparse.Action):
