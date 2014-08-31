@@ -3,17 +3,20 @@ import argparse
 class Parser(argparse.ArgumentParser):
     def __init__(self, description, add_h=True):
         super(Parser, self).__init__(description=description, add_help=add_h,
-                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                        prog='sync')
+        from watcher.sync import VERSION
+        self.add_argument('-v', '--version', action='version',
+                          version='%(prog)s ' + str(VERSION))
         # https://docs.python.org/dev/library/argparse.html#sub-commands
-        self.subparsers = subparsers = self.add_subparsers(
-            help='sub-command help')
+        subparsers = self.add_subparsers(title='Commands',
+                                         description='valid subcommands',
+                                         help='Type any of those passing the '
+                                              '-h flag to get additional help')
         # http://stackoverflow.com/a/8757447/281545
         subparsers._parser_class = argparse.ArgumentParser
-        parsers = []
-        # print watcher.commands
         from  watcher.commands import CMDS
-        for cmd in CMDS:
-            parsers.append(cmd()(subparsers))
+        for cmd in CMDS: cmd()(subparsers)
 
     def parse(self, args):
         """

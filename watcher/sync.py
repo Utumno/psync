@@ -8,6 +8,8 @@ from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
 
+VERSION = 0.1
+
 class Sync(object):
     """Static class that keeps all the state of the running application.
     TODO: add persistent state (an ini ?)
@@ -31,7 +33,7 @@ class Sync(object):
             while True:
                 # http://stackoverflow.com/a/17352877/281545
                 cmd = shlex.split(raw_input('> ').strip())
-                logging.debug('command line: %s', cmd)
+                # logging.debug('command line: %s', cmd)
                 try:
                     parser.parse(cmd)
                 except SystemExit:  # DUH
