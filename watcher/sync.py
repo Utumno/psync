@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 import logging
 import shlex
-import os
+import os, sys
 from watchdog.observers import Observer
 # internal imports
 from watcher.cli import Parser
@@ -27,6 +27,7 @@ class Sync(object):
                             datefmt='%Y-%m-%d %H:%M:%S')
         parser = Parser(description='Monitor and sync directory changes')
         try:
+            ### COMMAND LOOP ###
             while True:
                 # http://stackoverflow.com/a/17352877/281545
                 cmd = shlex.split(raw_input('> ').strip())
@@ -36,6 +37,9 @@ class Sync(object):
                 except SystemExit:  # DUH
                 # http://stackoverflow.com/q/16004901/281545
                     pass
+                # http://stackoverflow.com/questions/230751
+                sys.stdout.flush()
+                sys.stderr.flush()
         except KeyboardInterrupt:
             pass
         finally:
