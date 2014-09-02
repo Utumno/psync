@@ -1,9 +1,9 @@
 import SocketServer
-import socket               # Import socket module
+import socket
+
 
 class DiscoveryServer(object):
-
-    host =  socket.gethostbyname(socket.gethostname())
+    host = socket.gethostbyname(socket.gethostname())
 
     class DiscoveryUDPHandler(SocketServer.BaseRequestHandler):
         ''' Here we implement the required service '''
@@ -16,15 +16,12 @@ class DiscoveryServer(object):
             socket.sendto(str(DiscoveryServer.host), self.client_address)
 
     def __init__(self):
-            self.port = 8001                # Reserve a port for your service.
-            print self.host
-            print self.port
-
-    def activate(self):
+        self.port = 8001  # Reserve a port for your service.
+        print self.host
+        print self.port
         server = SocketServer.UDPServer((self.host, self.port), DiscoveryServer.DiscoveryUDPHandler)
         server.serve_forever()
 
-if __name__ == "__main__":
-     x = DiscoveryServer()
-     x.activate()
 
+if __name__ == "__main__":
+    x = DiscoveryServer()
