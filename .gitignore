@@ -1,1 +1,4 @@
 *.pyc
+.idea/inspectionProfiles/*
+.idea/dictionaries/*
+.idea/scopes/*

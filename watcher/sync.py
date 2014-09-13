@@ -29,8 +29,13 @@ class Sync(object):
                             datefmt='%Y-%m-%d %H:%M:%S')
         parser = Parser(description='Monitor and sync directory changes')
         try:
+            ### Discovery Server/Client ###
+            # TODO: stop the servers
             ### COMMAND LOOP ###
             while True:
+                # http://stackoverflow.com/questions/230751
+                sys.stdout.flush()
+                sys.stderr.flush()
                 # http://stackoverflow.com/a/17352877/281545
                 cmd = shlex.split(raw_input('> ').strip())
                 # logging.debug('command line: %s', cmd)
@@ -39,9 +44,6 @@ class Sync(object):
                 except SystemExit:  # DUH
                 # http://stackoverflow.com/q/16004901/281545
                     pass
-                # http://stackoverflow.com/questions/230751
-                sys.stdout.flush()
-                sys.stderr.flush()
         except KeyboardInterrupt:
             pass
         finally:
@@ -49,6 +51,7 @@ class Sync(object):
                 observer.stop()
             for observer in self.observers:
                 observer.join()
+            # TODO: stop the servers
 
     @staticmethod
     def addObserver(path='../../sandbox', ignored_files=("lol/*",)):

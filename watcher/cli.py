@@ -7,7 +7,8 @@ class Parser(argparse.ArgumentParser):
                         prog='sync')
         from watcher.sync import VERSION
         self.add_argument('-v', '--version', action='version',
-                          version='%(prog)s ' + str(VERSION))
+                          version='%(prog)s ' + str(VERSION),
+                          help="show program's version")
         # https://docs.python.org/dev/library/argparse.html#sub-commands
         subparsers = self.add_subparsers(title='Commands',
                                          description='valid subcommands',

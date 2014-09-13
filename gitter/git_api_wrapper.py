@@ -50,8 +50,9 @@ class Git(object):
 
     def commitAll(self, msg):
         try:
-            self._g.add('-A')
-            self._g.commit(m=msg)
+            if self.repo.is_dirty(untracked_files=True):
+                self._g.add('-A')
+                self._g.commit(m=msg)
         except exc.GitCommandError:
             # see: http://stackoverflow.com/a/21078070/281545
             pass

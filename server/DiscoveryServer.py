@@ -1,4 +1,5 @@
 import SocketServer
+import logging
 import socket
 
 class DiscoveryServer(object):
@@ -9,9 +10,8 @@ class DiscoveryServer(object):
 
         def handle(self):
             data = self.request[0].strip()
-            print "self.request value is ", self.request[0]
+            logging.debug("self.request value is %s", data)
             _socket = self.request[1]
-            print 'Got that: ', data
             _socket.sendto(str(DiscoveryServer.host), self.client_address)
 
     def __init__(self):

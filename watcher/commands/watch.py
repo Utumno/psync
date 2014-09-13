@@ -1,12 +1,11 @@
 import argparse
-import logging
-from watcher.commands.command import Command, Arg
+from watcher.commands.command import Command, Arg # move to __init__ ?
 from watcher.sync import Sync
 
 class Watch(Command):
     class _WatchAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            logging.debug('%r %r %r' % (namespace, values, option_string))
+            # logging.debug('%r %r %r' % (namespace, values, option_string))
             setattr(namespace, self.dest, values)
             Sync.addObserver(path=values)
 
