@@ -10,7 +10,7 @@ class DiscoveryServer(threading.Thread):
             data = self.request[0].strip()
             logging.debug("self.request value is %s", data)
             _socket = self.request[1]
-            _socket.sendto(str(self.server.host), self.client_address)
+            _socket.sendto(str(self.server.server_address), self.client_address)
 
     def __init__(self):
         super(DiscoveryServer, self).__init__(name=self.__class__.__name__,
@@ -26,10 +26,10 @@ class DiscoveryServer(threading.Thread):
                      self.port)
         try:
             self.server.serve_forever()
+            logging.info("Stopping Discovery server at: %s:%s", self.host,
+                     self.port)
         except:
             logging.exception("Discovery server crashed.")
-        logging.info("Stopping Discovery server at: %s:%s", self.host,
-                     self.port)
 
     def shutdown(self):
         self.server.shutdown()
