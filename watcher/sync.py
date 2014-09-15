@@ -4,6 +4,7 @@ import shlex
 import os, sys
 from watchdog.observers import Observer
 # internal imports
+from server.DiscoveryServer import DiscoveryServer
 from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
@@ -28,9 +29,14 @@ class Sync(object):
                             format='%(asctime)s - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
         parser = Parser(description='Monitor and sync directory changes')
+        server = None
         try:
             ### Discovery Server/Client ###
-            # TODO: stop the servers
+            try:
+                server = DiscoveryServer()
+                server.start()
+            except:
+                logging.exception("Failed to start Discovery server")
             ### COMMAND LOOP ###
             while True:
                 # http://stackoverflow.com/questions/230751
@@ -42,7 +48,7 @@ class Sync(object):
                 try:
                     parser.parse(cmd)
                 except SystemExit:  # DUH
-                # http://stackoverflow.com/q/16004901/281545
+                    # http://stackoverflow.com/q/16004901/281545
                     pass
         except KeyboardInterrupt:
             pass
@@ -51,6 +57,9 @@ class Sync(object):
                 observer.stop()
             for observer in self.observers:
                 observer.join()
+            if server:
+                server.shutdown()
+                server.join()
             # TODO: stop the servers
 
     @staticmethod
