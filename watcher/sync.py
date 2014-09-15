@@ -5,6 +5,7 @@ import os, sys
 from watchdog.observers import Observer
 # internal imports
 from server.DiscoveryServer import DiscoveryServer
+from server.SocketClient import DiscoveryClient
 from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
@@ -29,14 +30,17 @@ class Sync(object):
                             format='%(asctime)s - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
         parser = Parser(description='Monitor and sync directory changes')
-        server = None
+        server, client = None, None
         try:
             ### Discovery Server/Client ###
             try:
                 server = DiscoveryServer()
                 server.start()
-            except:
-                logging.exception("Failed to start Discovery server")
+            except: logging.exception("Failed to start Discovery server.")
+            try:
+                client = DiscoveryClient()
+                client.start()
+            except: logging.exception("Failed to start Discovery client.")
             ### COMMAND LOOP ###
             while True:
                 # http://stackoverflow.com/questions/230751
@@ -60,7 +64,9 @@ class Sync(object):
             if server:
                 server.shutdown()
                 server.join()
-            # TODO: stop the servers
+            if client:
+                client.shutdown()
+                client.join()
 
     @staticmethod
     def addObserver(path='../../sandbox', ignored_files=("lol/*",)):

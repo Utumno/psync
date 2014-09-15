@@ -14,23 +14,22 @@ class DiscoveryServer(threading.Thread):
 
     def __init__(self):
         super(DiscoveryServer, self).__init__(name=self.__class__.__name__,
-                                              target=self._serve)
-
+                                              target=self._task)
         self.host = socket.gethostbyname(socket.gethostname())
         self.port = 8001  # Reserve a port for your service. TODO...
         self.server = SocketServer.UDPServer((self.host, self.port),
                                       DiscoveryServer._DiscoveryUDPHandler)
         # TODO: inherit from UDPServer
 
-    def _serve(self):
+    def _task(self):
         logging.info("Starting Discovery server at: %s:%s", self.host,
                      self.port)
-        self.server.serve_forever()
+        try:
+            self.server.serve_forever()
+        except:
+            logging.exception("Discovery server crashed.")
         logging.info("Stopping Discovery server at: %s:%s", self.host,
                      self.port)
 
     def shutdown(self):
         self.server.shutdown()
-
-if __name__ == "__main__":
-    x = DiscoveryServer()
