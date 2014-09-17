@@ -4,7 +4,7 @@ import shlex
 import os, sys
 from watchdog.observers import Observer
 # internal imports
-from server.DiscoveryServer import DiscoveryServer
+from server.DiscoveryServer import DiscoveryServer, HttpServer
 from server.SocketClient import DiscoveryClient
 from watcher.cli import Parser
 from gitter import git_api_wrapper
@@ -30,7 +30,7 @@ class Sync(object):
                             format='%(asctime)s - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
         parser = Parser(description='Monitor and sync directory changes')
-        server, client = None, None
+        server, client, http = None, None, None
         try:
             ### Discovery Server/Client ###
             try:
@@ -41,6 +41,10 @@ class Sync(object):
                 client = DiscoveryClient()
                 client.start()
             except: logging.exception("Failed to start Discovery client.")
+            try:
+                http = HttpServer()
+                http.start()
+            except: logging.exception("Failed to start HttpServer server.")
             ### COMMAND LOOP ###
             while True:
                 # http://stackoverflow.com/questions/230751
@@ -64,6 +68,9 @@ class Sync(object):
             if server:
                 server.shutdown()
                 server.join()
+            if http:
+                http.shutdown()
+                http.join()
             if client:
                 client.shutdown()
                 client.join()
