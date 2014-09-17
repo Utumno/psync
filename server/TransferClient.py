@@ -6,7 +6,7 @@ class TransferClient(SocketClient.BaseClient):
     PORT = 8000
 
     def __init__(self):
-        SocketClient.BaseClient.__init__(self, SocketClient.TRANSFER_MODE,
+        SocketClient.BaseClient.__init__(self, SocketClient._TCP,
                                          TransferClient.HOST,
                                          TransferClient.PORT)
 
