@@ -9,10 +9,10 @@ _TCP = 1
 BROADCAST_INTERVAL = TIMEOUT = 5 # TODO
 PORT = 8001
 
-class BaseClient(threading.Thread):
+class _BaseClient(threading.Thread):
 
     def __init__(self, socket_type=_UDP, tcp_host="0.0.0.0", port=PORT):
-        super(BaseClient, self).__init__(name=self.__class__.__name__,
+        super(_BaseClient, self).__init__(name=self.__class__.__name__,
                                               target=self._task)
         self.s = None
         self.setup(socket_type, tcp_host, port)
@@ -24,6 +24,7 @@ class BaseClient(threading.Thread):
         try:
             if socket_type is _UDP:
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                # SOL_SOCKET is needed for SO_BROADCAST
                 self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             else:
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,7 +47,7 @@ class BaseClient(threading.Thread):
 
 _RECEIVE_BUFFER = 1024 # TODO: belongs to message
 
-class DiscoveryClient(BaseClient):
+class DiscoveryClient(_BaseClient):
 
     def __init__(self, broadcast_interval=BROADCAST_INTERVAL):
         super(DiscoveryClient, self).__init__(socket_type=_UDP)
@@ -63,8 +64,8 @@ class DiscoveryClient(BaseClient):
             # Sync.notifyPeers()
             try:
                 c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
-                print "The received message's payload is ", c
                 if addr[0] != self.host:
+                    print "The received message's payload is ", c
                     logging.info('New peer')
             except socket.timeout: logging.debug("Broadcast timed out")
             except: logging.exception("Broadcast failed")
