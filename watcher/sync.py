@@ -4,8 +4,8 @@ import shlex
 import os, sys
 from watchdog.observers import Observer
 # internal imports
-from server.DiscoveryServer import DiscoveryServer, HttpServer
-from server.SocketClient import DiscoveryClient
+from server.servers import DiscoveryServer, HttpServer
+from server.clients import DiscoveryClient
 from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
