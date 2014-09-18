@@ -18,9 +18,9 @@ class Sync(object):
     TODO: add persistent state (an ini ?)
     """
     # observers are threads - on exiting shut them down
-    observers = []
+    _observers = []
     # _Tree classes that keep info on directory trees being watched
-    watches = []
+    _watches = []
 
     class _Tree(object):
         def __init__(self, path, uuid):
@@ -63,9 +63,9 @@ class Sync(object):
         except KeyboardInterrupt:
             pass
         finally:
-            for observer in self.observers:
+            for observer in self._observers:
                 observer.stop()
-            for observer in self.observers:
+            for observer in self._observers:
                 observer.join()
             if server:
                 server.shutdown()
@@ -87,7 +87,7 @@ class Sync(object):
         elif not os.path.isdir(abspath):
             logging.warn("%s is not a directory" % abspath)
             return
-        for watch in Sync.watches:
+        for watch in Sync._watches:
             if abspath.startswith(watch.root + os.path.sep):
                 # TODO: check parent folders
                 logging.warn(
@@ -106,12 +106,12 @@ class Sync(object):
         observer = Observer()
         observer.schedule(event_handler, path, recursive=True)
         observer.start()
-        Sync.observers.append(observer)
-        Sync.watches.append(Sync._Tree(abspath, repoid))
+        Sync._observers.append(observer)
+        Sync._watches.append(Sync._Tree(abspath, repoid))
 
     @staticmethod
     def broadcastMsg():
-        return DiscoveryMSG(map(lambda x: x.uuid, Sync.watches)).serialize()
+        return DiscoveryMSG(map(lambda x: x.uuid, Sync._watches)).serialize()
 
 if __name__ == "__main__":
     Sync()

@@ -16,10 +16,10 @@ def create(dir='.'):
         logging.exception("Failed to create the file.")
         return None
 
-def loadrc(dir='.'):
+def readId(dir='.'):
     try:
         filename = os.path.join(os.path.abspath(dir), UUID_FILENAME)
-        with open(filename, "r") as f: return f.read().splitlines()
+        with open(filename, "r") as f: return f.read().splitlines()[0]
     except:
         logging.exception("Failed to read the .sync file")
         return None
