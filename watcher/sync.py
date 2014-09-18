@@ -4,11 +4,12 @@ import shlex
 import os, sys
 from watchdog.observers import Observer
 # internal imports
-from server.servers import DiscoveryServer, HttpServer
-from server.clients import DiscoveryClient
+import server as sr
+from server import uniqueid
 from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
+from watcher.messages import DiscoveryMSG
 
 VERSION = 0.1
 
@@ -22,8 +23,9 @@ class Sync(object):
     watches = []
 
     class _Tree(object):
-        def __init__(self, path):
+        def __init__(self, path, uuid):
             self.root = os.path.abspath(path)
+            self.uuid = uuid
 
     def __init__(self):
         logging.basicConfig(level=logging.DEBUG,
@@ -34,15 +36,15 @@ class Sync(object):
         try:
             ### Discovery Server/Client ###
             try:
-                server = DiscoveryServer()
+                server = sr.servers.DiscoveryServer()
                 server.start()
             except: logging.exception("Failed to start Discovery server.")
             try:
-                client = DiscoveryClient()
+                client = sr.clients.DiscoveryClient()
                 client.start()
             except: logging.exception("Failed to start Discovery client.")
             try:
-                http = HttpServer()
+                http = sr.servers.HttpServer()
                 http.start()
             except: logging.exception("Failed to start HttpServer server.")
             ### COMMAND LOOP ###
@@ -94,6 +96,9 @@ class Sync(object):
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
+        repoid = uniqueid.UniqueID.loadrc(path)
+        if not repoid:
+            repoid = uniqueid.UniqueID.create(path)
         ignored = git.getIgnoredPaths()
         logging.debug(ignored)
         ignored.append(".*\.git.*")
@@ -102,7 +107,11 @@ class Sync(object):
         observer.schedule(event_handler, path, recursive=True)
         observer.start()
         Sync.observers.append(observer)
-        Sync.watches.append(Sync._Tree(abspath))
+        Sync.watches.append(Sync._Tree(abspath, repoid))
+
+    @staticmethod
+    def broadcastMsg():
+        return DiscoveryMSG(map(lambda x: x.uuid, Sync.watches)).serialize()
 
 if __name__ == "__main__":
     Sync()

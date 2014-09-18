@@ -2,6 +2,7 @@ import logging
 import socket
 import threading
 from time import sleep
+from watcher.sync import Sync
 
 _UDP = 0
 _TCP = 1
@@ -59,9 +60,8 @@ class DiscoveryClient(_BaseClient):
         logging.info("Starting Discovery client at: %s:%s", self.host,
                      self.port)
         while not self.interrupted:
-            # Sync.broadcast()
-            self.s.sendto("DISCOVERY MESSAGE", ('255.255.255.255', PORT))
-            # Sync.notifyPeers()
+            self.s.sendto(Sync.broadcastMsg(), ('255.255.255.255', PORT))
+            # TODO: Sync.notifyPeers()
             try:
                 c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
                 if addr[0] != self.host:
