@@ -96,9 +96,9 @@ class Sync(object):
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
-        repoid = uniqueid.UniqueID.loadrc(path)
+        repoid = uniqueid.readId(path)
         if not repoid:
-            repoid = uniqueid.UniqueID.create(path)
+            repoid = uniqueid.create(path)
         ignored = git.getIgnoredPaths()
         logging.debug(ignored)
         ignored.append(".*\.git.*")
