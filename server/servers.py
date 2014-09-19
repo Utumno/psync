@@ -28,7 +28,7 @@ class DiscoveryServer(threading.Thread):
         logging.info("Starting Discovery server at: %s:%s", self.host,
                      self.port)
         try:
-            self.server.serve_forever()
+            self.server.serve_forever() # timeout is ignored
             logging.info("Stopping Discovery server at: %s:%s", self.host,
                          self.port)
         except:

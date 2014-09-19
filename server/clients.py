@@ -49,6 +49,9 @@ class _BaseClient(threading.Thread):
 _RECEIVE_BUFFER = 1024 # TODO: belongs to message
 
 class DiscoveryClient(_BaseClient):
+    """ Sends broadcast msgs to the lan informing
+        its existence along with the its tracked UUIDS
+    """
 
     def __init__(self, broadcast_interval=BROADCAST_INTERVAL):
         super(DiscoveryClient, self).__init__(socket_type=_UDP)
@@ -65,7 +68,7 @@ class DiscoveryClient(_BaseClient):
             try:
                 c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
                 if addr[0] != self.host:
-                    print "The received message's payload is ", c
+                    print "The server's response is ", c
                     logging.info('New peer')
             except socket.timeout: logging.debug("Broadcast timed out")
             except: logging.exception("Broadcast failed")
