@@ -2,6 +2,7 @@
 import logging
 import shlex
 import os, sys
+import threading
 from watchdog.observers import Observer
 # internal imports
 import server as sr
@@ -21,6 +22,10 @@ class Sync(object):
     _observers = []
     # _Tree classes that keep info on directory trees being watched
     _watches = []
+    _peers = {}
+    _lock_observers = threading.RLock()
+    _lock_watches = threading.RLock() # use this for observers too
+    _lock_peers = threading.RLock()
 
     class _Tree(object):
         def __init__(self, path, uuid):
@@ -87,6 +92,7 @@ class Sync(object):
         elif not os.path.isdir(abspath):
             logging.warn("%s is not a directory" % abspath)
             return
+        # FIXME: LOCKING !!!!!
         for watch in Sync._watches:
             if abspath.startswith(watch.root + os.path.sep):
                 # TODO: check parent folders
@@ -113,7 +119,14 @@ class Sync(object):
 
     @staticmethod
     def broadcastMsg():
-        return DiscoveryMSG(map(lambda x: x.uuid, Sync._watches)).serialize()
+        with Sync._lock_watches:
+            return DiscoveryMSG(
+                map(lambda x: x.uuid, Sync._watches)).serialize()
+
+    @staticmethod
+    def newPeer(_from,uuids):
+        with Sync._lock_peers:
+                Sync._peers[_from] = uuids
 
 if __name__ == "__main__":
     Sync()
