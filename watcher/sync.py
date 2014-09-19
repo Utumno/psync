@@ -5,6 +5,7 @@ import os, sys
 import threading
 from watchdog.observers import Observer
 # internal imports
+from log import Log
 import server as sr
 from server import uniqueid
 from watcher.cli import Parser
@@ -14,7 +15,7 @@ from watcher.messages import DiscoveryMSG
 
 VERSION = 0.1
 
-class Sync(object):
+class Sync(Log):
     """Static class that keeps all the state of the running application.
     TODO: add persistent state (an ini ?)
     """
@@ -32,7 +33,8 @@ class Sync(object):
             self.root = os.path.abspath(path)
             self.uuid = uuid
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super(Sync, self).__init__(*args, **kwargs)
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
