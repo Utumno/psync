@@ -96,6 +96,8 @@ class Sync(object):
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
+        git.init()
+        # TODO if a git repo and NOT a sync repo quit
         repoid = uniqueid.readId(path)
         if not repoid:
             repoid = uniqueid.create(path)
