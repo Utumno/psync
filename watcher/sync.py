@@ -104,7 +104,7 @@ class Sync(object):
         ignored = git.getIgnoredPaths()
         logging.debug(ignored)
         ignored.append(".*\.git.*")
-        event_handler = TestEventHandler(ignore_regexes=ignored)
+        event_handler = TestEventHandler(git, ignore_regexes=ignored)
         observer = Observer()
         observer.schedule(event_handler, path, recursive=True)
         observer.start()
