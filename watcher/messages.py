@@ -31,7 +31,7 @@ class DiscoveryMSG(Message):
         self._from = _from
 
     def serialize(self):
-        field = SUBFIELD_SEPARATOR.join(self.uuids)
+        field = SUBFIELD_SEPARATOR.join(map(str,self.uuids))
         return FIELD_SEPARATOR.join((self.label, field))
 
     def handle(self):
