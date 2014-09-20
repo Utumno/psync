@@ -2,7 +2,6 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s',
                     datefmt='%H:%M:%S')
-
 # create file handler which logs even debug messages
 fh = logging.FileHandler('spam.log')
 fh.setLevel(logging.DEBUG)
@@ -16,22 +15,41 @@ fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
 class Log(object):
+    clogger = logging.getLogger(__name__)
+
     def __init__(self,*args,**kwargs):
         super(Log, self).__init__(*args,**kwargs)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.DEBUG)
+        self.clogger.name = self.__class__.__name__ # won't work im sure
         # add the handlers to the logger
         self.logger.addHandler(fh)
         self.logger.addHandler(ch)
 
     def d(self, msg, *args, **kwargs):
-        self.logger.debug(msg, args, **kwargs)
+        self.logger.debug(msg, *args, **kwargs)
 
     def w(self, msg, *args, **kwargs):
-        self.logger.warn(msg, args, **kwargs)
+        self.logger.warn(msg, *args, **kwargs)
 
     def i(self, msg, *args, **kwargs):
-        self.logger.info(msg, args, **kwargs)
+        self.logger.info(msg, *args, **kwargs)
 
     def e(self, msg, *args, **kwargs):
-        self.logger.exception(msg, args, **kwargs)
+        self.logger.exception(msg, *args, **kwargs)
+
+    @classmethod
+    def d(cls, msg, *args, **kwargs):
+        cls.clogger.debug(msg, *args, **kwargs)
+
+    @classmethod
+    def w(cls, msg, *args, **kwargs):
+        cls.clogger.warn(msg, *args, **kwargs)
+
+    @classmethod
+    def i(cls, msg, *args, **kwargs):
+        cls.clogger.info(msg, *args, **kwargs)
+
+    @classmethod
+    def e(cls, msg, *args, **kwargs):
+        cls.clogger.exception(msg, *args, **kwargs)

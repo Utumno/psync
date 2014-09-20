@@ -1,22 +1,26 @@
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 import SocketServer
-import logging
 import socket
 import threading
 from log import Log
 from watcher.messages import Message, UnknownMessageException
 
-class DiscoveryServer(threading.Thread):
+class DiscoveryServer(Log,threading.Thread):
 
-    class _DiscoveryUDPHandler(SocketServer.BaseRequestHandler):
+    class _DiscoveryUDPHandler(Log,SocketServer.BaseRequestHandler):
         def __init__(self, request, client_address, server):
-            SocketServer.BaseRequestHandler.__init__(self, request,
-                                                     client_address, server)
+            super(DiscoveryServer._DiscoveryUDPHandler, self).__init__() # Log
+            # need this as MRO is Log,object,SocketServer.BaseRequestHandler!..
+            SocketServer.BaseRequestHandler.__init__(self,request,
+                                                        client_address, server)
+
+        # noinspection PyAttributeOutsideInit
+        # handle() runs in SocketServer.BaseRequestHandler.__init__...
+        def handle(self):
+            # ...so these have to be defined here
             self._message = self.request[0].strip()
             self._socket = self.request[1]
-
-        def handle(self):
-            logging.debug("Client MSG is %s", self._message)
+            self.d("Client MSG is %s", self._message)
             try:
                 msg = Message.deserialize(self._message,
                                           _from=self.client_address)
@@ -34,14 +38,12 @@ class DiscoveryServer(threading.Thread):
         # TODO: inherit from UDPServer
 
     def _task(self):
-        logging.info("Starting Discovery server at: %s:%s", self.host,
-                     self.port)
+        self.i("Starting Discovery server at: %s:%s", self.host,self.port)
         try:
             self.server.serve_forever() # timeout is ignored
-            logging.info("Stopping Discovery server at: %s:%s", self.host,
-                         self.port)
+            self.i("Stopping Discovery server at: %s:%s", self.host,self.port)
         except:
-            logging.exception("Discovery server crashed.")
+            self.e("Discovery server crashed.")
 
     def shutdown(self):
         self.server.shutdown()

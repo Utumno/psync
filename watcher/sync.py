@@ -33,8 +33,8 @@ class Sync(Log):
             self.root = os.path.abspath(path)
             self.uuid = uuid
 
-    def __init__(self, *args, **kwargs):
-        super(Sync, self).__init__(*args, **kwargs)
+    def __init__(self):
+        super(Sync, self).__init__()
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
@@ -61,7 +61,7 @@ class Sync(Log):
                 sys.stderr.flush()
                 # http://stackoverflow.com/a/17352877/281545
                 cmd = shlex.split(raw_input('> ').strip())
-                # logging.debug('command line: %s', cmd)
+                # self.d('command line: %s', cmd)
                 try:
                     parser.parse(cmd)
                 except SystemExit:  # DUH
@@ -84,22 +84,21 @@ class Sync(Log):
                 client.shutdown()
                 client.join()
 
-    @staticmethod
-    def addObserver(path='../../sandbox', ignored_files=("lol/*",)):
+    @classmethod
+    def addObserver(cls,path='../../sandbox', ignored_files=("lol/*",)):
         abspath = os.path.abspath(path)
-        logging.debug("User given path: %s -> %s" % (path, abspath))
+        cls.d("User given path: %s -> %s" % (path, abspath))
         if not os.path.exists(abspath):
-            logging.info("Creating directory %s" % abspath)
+            cls.i("Creating directory %s" % abspath)
             os.makedirs(abspath)
         elif not os.path.isdir(abspath):
-            logging.warn("%s is not a directory" % abspath)
+            cls.w("%s is not a directory" % abspath)
             return
         # FIXME: LOCKING !!!!!
         for watch in Sync._watches:
             if abspath.startswith(watch.root + os.path.sep):
                 # TODO: check parent folders
-                logging.warn(
-                    "%s is a subpath of %s which you already watch" % (
+                cls.w("%s is a subpath of %s which you already watch" % (
                     path, watch.root))
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
@@ -110,7 +109,7 @@ class Sync(Log):
         if not repoid:
             repoid = uniqueid.create(path)
         ignored = git.getIgnoredPaths()
-        logging.debug(ignored)
+        cls.d(ignored)
         ignored.append(".*\.git.*")
         event_handler = TestEventHandler(git, ignore_regexes=ignored)
         observer = Observer()
