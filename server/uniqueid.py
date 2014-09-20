@@ -22,6 +22,7 @@ class Uuid(Log):
     def readId(cls, dir='.'):
         try:
             filename = os.path.join(os.path.abspath(dir), UUID_FILENAME)
+            if not os.path.isfile(filename): return None
             with open(filename, "r") as f:
                 return f.read().splitlines()[0]
         except:
