@@ -9,13 +9,15 @@ fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 # create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s %(message)s',
                     datefmt='%H:%M:%S')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
 class Log(object):
     clogger = logging.getLogger(__name__)
+    self.logger.addHandler(fh)
+    self.logger.addHandler(ch)
 
     def __init__(self,*args,**kwargs):
         super(Log, self).__init__(*args,**kwargs)
@@ -39,15 +41,15 @@ class Log(object):
         self.logger.exception(msg, *args, **kwargs)
 
     @classmethod
-    def d(cls, msg, *args, **kwargs):
+    def cd(cls, msg, *args, **kwargs):
         cls.clogger.debug(msg, *args, **kwargs)
 
     @classmethod
-    def w(cls, msg, *args, **kwargs):
+    def cw(cls, msg, *args, **kwargs):
         cls.clogger.warn(msg, *args, **kwargs)
 
     @classmethod
-    def i(cls, msg, *args, **kwargs):
+    def ci(cls, msg, *args, **kwargs):
         cls.clogger.info(msg, *args, **kwargs)
 
     @classmethod

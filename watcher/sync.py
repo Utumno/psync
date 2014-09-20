@@ -87,18 +87,18 @@ class Sync(Log):
     @classmethod
     def addObserver(cls,path='../../sandbox', ignored_files=("lol/*",)):
         abspath = os.path.abspath(path)
-        cls.d("User given path: %s -> %s" % (path, abspath))
+        cls.cd("User given path: %s -> %s" % (path, abspath))
         if not os.path.exists(abspath):
-            cls.i("Creating directory %s" % abspath)
+            cls.ci("Creating directory %s" % abspath)
             os.makedirs(abspath)
         elif not os.path.isdir(abspath):
-            cls.w("%s is not a directory" % abspath)
+            cls.cw("%s is not a directory" % abspath)
             return
         # FIXME: LOCKING !!!!!
         for watch in Sync._watches:
             if abspath.startswith(watch.root + os.path.sep):
                 # TODO: check parent folders
-                cls.w("%s is a subpath of %s which you already watch" % (
+                cls.cw("%s is a subpath of %s which you already watch" % (
                     path, watch.root))
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
@@ -109,7 +109,7 @@ class Sync(Log):
         if not repoid:
             repoid = uniqueid.create(path)
         ignored = git.getIgnoredPaths()
-        cls.d(ignored)
+        cls.cd(ignored)
         ignored.append(".*\.git.*")
         event_handler = TestEventHandler(git, ignore_regexes=ignored)
         observer = Observer()
