@@ -101,9 +101,9 @@ class Sync(Log):
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
         git.init()
         # TODO if a git repo and NOT a sync repo quit
-        repoid = uniqueid.readId(path)
+        repoid = uniqueid.Uuid.readId(path)
         if not repoid:
-            repoid = uniqueid.create(path)
+            repoid = uniqueid.Uuid.create(path)
         ignored = git.getIgnoredPaths()
         cls.cd(ignored)
         ignored.append(".*\.git.*")

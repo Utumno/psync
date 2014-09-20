@@ -1,25 +1,29 @@
-import logging
 import os
 import uuid
-
-"""Static module that creates and reads the UUID file of the repo."""
+from log import Log
 
 UUID_FILENAME = '.sync'
 
-def create(dir='.'):
-    _id = uuid.uuid4()
-    try:
-        filename = os.path.join(os.path.abspath(dir), UUID_FILENAME)
-        with open(filename, "a") as f: f.write(str(_id) + "\n")
-        return _id
-    except:
-        logging.exception("Failed to create the file.")
-        return None
+class Uuid(Log):
+    """Static class that creates and reads the UUID file of the repo."""
+    @classmethod
+    def create(cls, dir='.'):
+        _id = uuid.uuid4()
+        try:
+            filename = os.path.join(os.path.abspath(dir), UUID_FILENAME)
+            with open(filename, "a") as f:
+                f.write(str(_id) + "\n")
+            return _id
+        except:
+            cls.ce("Failed to create the file.")
+            return None
 
-def readId(dir='.'):
-    try:
-        filename = os.path.join(os.path.abspath(dir), UUID_FILENAME)
-        with open(filename, "r") as f: return f.read().splitlines()[0]
-    except:
-        logging.exception("Failed to read the .sync file")
-        return None
+    @classmethod
+    def readId(cls, dir='.'):
+        try:
+            filename = os.path.join(os.path.abspath(dir), UUID_FILENAME)
+            with open(filename, "r") as f:
+                return f.read().splitlines()[0]
+        except:
+            cls.ce("Failed to read the .sync file")
+            return None

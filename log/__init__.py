@@ -13,15 +13,18 @@ fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
 class Log(object):
-    clogger = logging.getLogger("ClassLogger")
+    clogger = logging.getLogger("Log")
     clogger.addHandler(fh)
     clogger.addHandler(ch)
+    clogger.propagate = False # yep
+    clogger.setLevel(logging.DEBUG)
 
     def __init__(self,*args,**kwargs):
         super(Log, self).__init__(*args,**kwargs)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.DEBUG)
-        self.clogger.name = self.__class__.__name__ # won't work im sure
+        self.logger.propagate = False # yep
+        # self.clogger.name = self.__class__.__name__ # cls picks this one up !
         # add the handlers to the logger
         self.logger.addHandler(fh)
         self.logger.addHandler(ch)
@@ -51,5 +54,5 @@ class Log(object):
         cls.clogger.info(msg, *args, **kwargs)
 
     @classmethod
-    def e(cls, msg, *args, **kwargs):
+    def ce(cls, msg, *args, **kwargs):
         cls.clogger.exception(msg, *args, **kwargs)
