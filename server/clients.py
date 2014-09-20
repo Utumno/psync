@@ -1,7 +1,7 @@
-import logging
 import socket
 import threading
 from time import sleep
+from log import Log
 from watcher.sync import Sync
 
 _UDP = 0
@@ -10,11 +10,12 @@ _TCP = 1
 BROADCAST_INTERVAL = TIMEOUT = 5 # TODO
 PORT = 8001
 
-class _BaseClient(threading.Thread):
+class _BaseClient(threading.Thread,Log):
 
     def __init__(self, socket_type=_UDP, tcp_host="0.0.0.0", port=PORT):
         super(_BaseClient, self).__init__(name=self.__class__.__name__,
                                               target=self._task)
+        Log.__init__(self) # duh
         self.s = None
         self.setup(socket_type, tcp_host, port)
         self.port = port
@@ -33,7 +34,7 @@ class _BaseClient(threading.Thread):
             self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.s.settimeout(TIMEOUT)
         except socket.error:
-            logging.exception( "Failed to create the socket")
+            self.e( "Failed to create the socket")
 
     def _task(self):
         try:
@@ -60,8 +61,7 @@ class DiscoveryClient(_BaseClient):
 
     def service(self):
         """Discover if there is an active sync application in the LAN."""
-        logging.info("Starting Discovery client at: %s:%s", self.host,
-                     self.port)
+        self.i("Starting Discovery client at: %s:%s", self.host, self.port)
         while not self.interrupted:
             self.s.sendto(Sync.broadcastMsg(), ('255.255.255.255', PORT))
             # TODO: Sync.notifyPeers()
@@ -69,12 +69,11 @@ class DiscoveryClient(_BaseClient):
                 c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
                 if addr[0] != self.host:
                     print "The server's response is ", c
-                    logging.info('New peer')
-            except socket.timeout: logging.debug("Broadcast timed out")
-            except: logging.exception("Broadcast failed")
+                    self.i('New peer')
+            except socket.timeout: self.d("Broadcast timed out")
+            except: self.e("Broadcast failed")
             sleep(self.broadcast_interval)
-        logging.info("Stopping Discovery client at: %s:%s", self.host,
-                     self.port)
+        self.i("Stopping Discovery client at: %s:%s", self.host, self.port)
 
     def shutdown(self):
         self.interrupted = True

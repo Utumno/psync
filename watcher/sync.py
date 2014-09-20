@@ -1,5 +1,4 @@
 #!/usr/bin/env python2
-import logging
 import shlex
 import os, sys
 import threading
@@ -35,9 +34,6 @@ class Sync(Log):
 
     def __init__(self):
         super(Sync, self).__init__()
-        logging.basicConfig(level=logging.DEBUG,
-                            format='%(asctime)s - %(message)s',
-                            datefmt='%Y-%m-%d %H:%M:%S')
         parser = Parser(description='Monitor and sync directory changes')
         server, client, http = None, None, None
         try:
@@ -45,15 +41,15 @@ class Sync(Log):
             try:
                 server = sr.servers.DiscoveryServer()
                 server.start()
-            except: logging.exception("Failed to start Discovery server.")
+            except: self.e("Failed to start Discovery server.")
             try:
                 client = sr.clients.DiscoveryClient()
                 client.start()
-            except: logging.exception("Failed to start Discovery client.")
+            except: self.e("Failed to start Discovery client.")
             try:
                 http = sr.servers.HttpServer()
                 http.start()
-            except: logging.exception("Failed to start HttpServer server.")
+            except: self.e("Failed to start HttpServer server.")
             ### COMMAND LOOP ###
             while True:
                 # http://stackoverflow.com/questions/230751

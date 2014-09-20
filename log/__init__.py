@@ -1,7 +1,5 @@
 import logging
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s',
-                    datefmt='%H:%M:%S')
 # create file handler which logs even debug messages
 fh = logging.FileHandler('spam.log')
 fh.setLevel(logging.DEBUG)
@@ -9,15 +7,15 @@ fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 # create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s %(message)s',
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] [%(name)s] %(message)s',
                     datefmt='%H:%M:%S')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
 class Log(object):
-    clogger = logging.getLogger(__name__)
-    self.logger.addHandler(fh)
-    self.logger.addHandler(ch)
+    clogger = logging.getLogger("ClassLogger")
+    clogger.addHandler(fh)
+    clogger.addHandler(ch)
 
     def __init__(self,*args,**kwargs):
         super(Log, self).__init__(*args,**kwargs)
