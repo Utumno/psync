@@ -62,7 +62,7 @@ class Git(object):
         dirty = self.repo.is_dirty(untracked_files=True)
         if dirty or allow_empty:
             try:
-                self._g.add('-A')
+                if dirty: self._g.add('-A')
             except exc.GitCommandError:
                 # see: http://stackoverflow.com/a/21078070/281545
                 logging.exception("add('-A') failed")
@@ -70,6 +70,9 @@ class Git(object):
                     self._g.commit("--allow-empty",m=msg)
                     return True
                 return False
+            if allow_empty :
+                self._g.commit("--allow-empty",m=msg)
+                return True
             self._g.commit(m=msg)
             return True
         return False
