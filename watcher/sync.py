@@ -23,9 +23,11 @@ class Sync(Log):
     # _Tree classes that keep info on directory trees being watched
     _watches = []
     _peers = {}
+    _requests = {}
     _lock_observers = threading.RLock()
     _lock_watches = threading.RLock() # use this for observers too
     _lock_peers = threading.RLock()
+    _lock_requests = threading.RLock()
 
     class _Tree(object):
         def __init__(self, path, uuid):
@@ -146,6 +148,13 @@ class Sync(Log):
                     msg += " No repos."
             else: return
             Log.ci(msg % (_from,))
+
+    @classmethod
+    def newRequestServer(cls, _from, host, repo):
+        with Sync._lock_requests:
+            old_reqs = Sync._requests.get(_from[0], set())
+            Sync._requests[_from[0]] = old_reqs | {repo}
+        cls.ci("New request from %s for %s" % (_from[0], repo))
 
 if __name__ == "__main__":
     Sync()

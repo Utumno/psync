@@ -1,3 +1,3 @@
-from watcher.commands import watch, quit
+from watcher.commands import watch, quit, share
 
-CMDS=[watch.Watch, quit.Quit]
+CMDS=[watch.Watch, quit.Quit, share.Share]
