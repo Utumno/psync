@@ -2,6 +2,7 @@
 import shlex
 import os, sys
 import threading
+import time
 from watchdog.observers import Observer
 # internal imports
 from log import Log
@@ -10,7 +11,7 @@ from server import uniqueid
 from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
-from watcher.messages import DiscoveryMSG
+from watcher.messages import DiscoveryMSG, RequestMSG
 
 VERSION = 0.1
 
@@ -24,10 +25,13 @@ class Sync(Log):
     _watches = []
     _peers = {}
     _requests = {}
+    _requests_made = {}
     _lock_observers = threading.RLock()
     _lock_watches = threading.RLock() # use this for observers too
     _lock_peers = threading.RLock()
     _lock_requests = threading.RLock()
+    _lock_requests_made = threading.RLock()
+    sync_client = None
 
     class _Tree(object):
         def __init__(self, path, uuid):
@@ -39,7 +43,7 @@ class Sync(Log):
         parser = Parser(description='Monitor and sync directory changes')
         server, client, http = None, None, None
         try:
-            ### Discovery Server/Client ###
+            ### Servers/Clients ###
             try:
                 server = sr.servers.DiscoveryServer()
                 server.start()
@@ -55,6 +59,11 @@ class Sync(Log):
                 http.start()
             except:
                 self.e("Failed to start HttpServer server.")
+            try:
+                self.__class__.sync_client = sr.clients.SyncClient()
+                self.__class__.sync_client.start()
+            except:
+                self.e("Failed to start Sync client.")
             ### COMMAND LOOP ###
             while True:
                 # http://stackoverflow.com/questions/230751
@@ -84,6 +93,9 @@ class Sync(Log):
             if client:
                 client.shutdown()
                 client.join()
+            if self.__class__.sync_client:
+                self.__class__.sync_client.shutdown()
+                self.__class__.sync_client.join()
 
     @classmethod
     def addObserver(cls, path='../../sandbox', ignored_files=("lol/*",)):
@@ -135,19 +147,22 @@ class Sync(Log):
             Sync._peers[_from] = uuids
             if old_uuids is None:
                 msg = "New peer %s."
-                if uuids:
-                    print uuids
-                    msg += "\nRepos:\n" + '\n'.join(map(str, uuids))
-                else:
-                    msg += " No repos."
             elif old_uuids != uuids:
                 msg = "Peer %s updated its repos."
-                if uuids:
-                    msg += "\nRepos:\n" + '\n'.join(map(str, uuids))
-                else:
-                    msg += " No repos."
             else: return
+            if uuids:
+                msg += " Repos:\n" + '\n'.join(map(str, uuids))
+            else:
+                msg += " No repos."
             Log.ci(msg % (_from,))
+
+    @classmethod
+    def newRequestClient(cls, host, repo):
+        with Sync._lock_requests_made:
+            old_reqs = Sync._requests_made.get(host, set())
+            Sync._requests_made[host] = old_reqs | {repo}
+        cls.sync_client.add((RequestMSG(host,repo),host))
+        cls.cd("New request sent to %s for %s" % (host, repo))
 
     @classmethod
     def newRequestServer(cls, _from, host, repo):

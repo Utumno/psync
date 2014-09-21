@@ -1,3 +1,4 @@
+from Queue import Queue, Empty
 import socket
 import threading
 from time import sleep
@@ -68,12 +69,39 @@ class DiscoveryClient(_BaseClient):
             try:
                 c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
                 if addr[0] != self.host:
-                    print "The server's response is ", c
+                    self.d( "The server's response is " % c)
                     self.i('New peer')
             except socket.timeout: self.d("Broadcast timed out")
             except: self.e("Broadcast failed")
             sleep(self.broadcast_interval)
         self.i("Stopping Discovery client at: %s:%s", self.host, self.port)
+
+    def shutdown(self):
+        self.interrupted = True
+
+class SyncClient(_BaseClient):
+    """ Sends broadcast msgs to the lan informing
+        its existence along with the its tracked UUIDS
+    """
+
+    def __init__(self):
+        super(SyncClient, self).__init__(socket_type=_UDP)
+        self._queue = Queue()
+        self.interrupted = False
+
+    def service(self):
+        """Discover if there is an active sync application in the LAN."""
+        self.i("Starting Sync client at: %s:%s", self.host, self.port)
+        while not self.interrupted:
+            try:
+                q = self._queue.get(timeout=BROADCAST_INTERVAL)
+                self.s.sendto(q[0], (q[1], PORT))
+            except Empty:
+                pass
+        self.i("Stopping Sync client at: %s:%s", self.host, self.port)
+
+    def add(self,obj):
+        self._queue.put(obj)
 
     def shutdown(self):
         self.interrupted = True
