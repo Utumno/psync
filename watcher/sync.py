@@ -41,15 +41,18 @@ class Sync(Log):
             try:
                 server = sr.servers.DiscoveryServer()
                 server.start()
-            except: self.e("Failed to start Discovery server.")
+            except:
+                self.e("Failed to start Discovery server.")
             try:
                 client = sr.clients.DiscoveryClient()
                 client.start()
-            except: self.e("Failed to start Discovery client.")
+            except:
+                self.e("Failed to start Discovery client.")
             try:
                 http = sr.servers.HttpServer()
                 http.start()
-            except: self.e("Failed to start HttpServer server.")
+            except:
+                self.e("Failed to start HttpServer server.")
             ### COMMAND LOOP ###
             while True:
                 # http://stackoverflow.com/questions/230751
@@ -81,7 +84,7 @@ class Sync(Log):
                 client.join()
 
     @classmethod
-    def addObserver(cls,path='../../sandbox', ignored_files=("lol/*",)):
+    def addObserver(cls, path='../../sandbox', ignored_files=("lol/*",)):
         abspath = os.path.abspath(path)
         cls.cd("User given path: %s -> %s" % (path, abspath))
         if not os.path.exists(abspath):
@@ -121,9 +124,28 @@ class Sync(Log):
                 map(lambda x: x.uuid, Sync._watches)).serialize()
 
     @staticmethod
-    def newPeer(_from,uuids):
+    def newPeer(_from, uuids):
         with Sync._lock_peers:
-                Sync._peers[_from] = uuids
+            try:
+                old_uuids = Sync._peers[_from]
+            except KeyError:
+                old_uuids = None
+            Sync._peers[_from] = uuids
+            if old_uuids is None:
+                msg = "New peer %s."
+                if uuids:
+                    print uuids
+                    msg += "\nRepos:\n" + '\n'.join(map(str, uuids))
+                else:
+                    msg += " No repos."
+            elif old_uuids != uuids:
+                msg = "Peer %s updated its repos."
+                if uuids:
+                    msg += "\nRepos:\n" + '\n'.join(map(str, uuids))
+                else:
+                    msg += " No repos."
+            else: return
+            Log.ci(msg % (_from,))
 
 if __name__ == "__main__":
     Sync()

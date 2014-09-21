@@ -15,8 +15,7 @@ class Message(object):
     def deserialize(message,_from=None):
         fields = message.split(FIELD_SEPARATOR)
         if fields[0] == LABEL + 'DISCOVERY':
-            uuids = fields[1].split(SUBFIELD_SEPARATOR) if len(
-                fields) > 1 else []
+            uuids = fields[1].split(SUBFIELD_SEPARATOR) if fields[1] else []
             return DiscoveryMSG(uuids,_from)
         else:
             raise UnknownMessageException
@@ -27,7 +26,7 @@ class DiscoveryMSG(Message):
     def __init__(self, uuids,_from=None):
         super(DiscoveryMSG, self).__init__()
         self.label = LABEL + 'DISCOVERY'
-        self.uuids = set(uuids)
+        self.uuids = set(uuids) if uuids else set()
         self._from = _from
 
     def serialize(self):

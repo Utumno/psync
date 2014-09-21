@@ -18,8 +18,12 @@ class DiscoveryServer(Log,threading.Thread):
         # handle() runs in SocketServer.BaseRequestHandler.__init__...
         def handle(self):
             # ...so these have to be defined here
+            # self._socket = self.request[1] # request is a two element tuple
+            # Ignore ALL messages from us.
+            if self.client_address[0] == self.server.server_address[0]:
+                return
+            # get the message
             self._message = self.request[0].strip()
-            self._socket = self.request[1]
             self.d("Client MSG is %s", self._message)
             try:
                 msg = Message.deserialize(self._message,
