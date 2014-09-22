@@ -21,7 +21,7 @@ class Sync(Log):
     # observers are threads - on exiting shut them down
     _observers = []
     # _Tree classes that keep info on directory trees being watched
-    _watches = []
+    _watches = {}
     _peers = {}
     _requests = {}
     _requests_made = {}
@@ -31,11 +31,6 @@ class Sync(Log):
     _lock_requests = threading.RLock()
     _lock_requests_made = threading.RLock()
     sync_client = None
-
-    class _Tree(object):
-        def __init__(self, path, uuid):
-            self.root = os.path.abspath(path)
-            self.uuid = uuid
 
     def __init__(self):
         super(Sync, self).__init__()
@@ -114,11 +109,11 @@ class Sync(Log):
             cls.cw("%s is not a directory" % abspath)
             return
         # FIXME: LOCKING !!!!!
-        for watch in Sync._watches:
-            if abspath.startswith(watch.root + os.path.sep):
+        for id_, path_ in Sync._watches.iteritems():
+            if abspath.startswith(path_ + os.path.sep):
                 # TODO: check parent folders
                 cls.cw("%s is a subpath of %s which you already watch" % (
-                    path, watch.root))
+                    path, path_))
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
@@ -135,13 +130,12 @@ class Sync(Log):
         observer.schedule(event_handler, path, recursive=True)
         observer.start()
         Sync._observers.append(observer)
-        Sync._watches.append(Sync._Tree(abspath, repoid))
+        Sync._watches[str(repoid)] = abspath
 
     @staticmethod
     def broadcastMsg():
         with Sync._lock_watches:
-            return DiscoveryMSG(
-                map(lambda x: x.uuid, Sync._watches)).serialize()
+            return DiscoveryMSG(Sync._watches.keys())
 
     @staticmethod
     def newPeer(_from, uuids):

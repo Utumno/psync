@@ -6,7 +6,7 @@ from time import sleep
 from log import Log
 from watcher.sync import Sync
 
-_UDP = 0
+_BROADCAST = 0
 _TCP = 1
 
 BROADCAST_INTERVAL = TIMEOUT = 5 # TODO
@@ -14,7 +14,7 @@ PORT = 8001
 
 class _BaseClient(threading.Thread,Log):
 
-    def __init__(self, socket_type=_UDP, tcp_host="0.0.0.0", port=PORT):
+    def __init__(self, socket_type=_BROADCAST, tcp_host="0.0.0.0", port=PORT):
         super(_BaseClient, self).__init__(name=self.__class__.__name__,
                                               target=self._task)
         Log.__init__(self) # duh
@@ -26,7 +26,7 @@ class _BaseClient(threading.Thread,Log):
 
     def setup(self, socket_type, tcp_host, port):
         try:
-            if socket_type is _UDP:
+            if socket_type is _BROADCAST:
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 # SOL_SOCKET is needed for SO_BROADCAST
                 self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -57,7 +57,7 @@ class DiscoveryClient(_BaseClient):
     """
 
     def __init__(self, broadcast_interval=BROADCAST_INTERVAL):
-        super(DiscoveryClient, self).__init__(socket_type=_UDP)
+        super(DiscoveryClient, self).__init__(socket_type=_BROADCAST)
         self.broadcast_interval = broadcast_interval
         self.interrupted = False
 
@@ -65,7 +65,7 @@ class DiscoveryClient(_BaseClient):
         """Discover if there is an active sync application in the LAN."""
         self.i("Starting Discovery client at: %s:%s", self.host, self.port)
         while not self.interrupted:
-            self.s.sendto(Sync.broadcastMsg(), ('255.255.255.255', PORT))
+            self.s.sendto(Sync.broadcastMsg().serialize(), ('255.255.255.255', PORT))
             # TODO: Sync.notifyPeers()
             try:
                 c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
@@ -81,12 +81,10 @@ class DiscoveryClient(_BaseClient):
         self.interrupted = True
 
 class SyncClient(_BaseClient):
-    """ Sends broadcast msgs to the lan informing
-        its existence along with the its tracked UUIDS
-    """
+    """Dispatches messages to the Discovery server."""
 
     def __init__(self):
-        super(SyncClient, self).__init__(socket_type=_UDP)
+        super(SyncClient, self).__init__(socket_type=_BROADCAST)
         self._queue = Queue()
         self.interrupted = False
 
