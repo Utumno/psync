@@ -63,14 +63,15 @@ class DiscoveryClient(_BaseClient):
 
     def service(self):
         """Discover if there is an active sync application in the LAN."""
-        self.i("Starting Discovery client at: %s:%s", self.host, self.port)
+        self.i("Starting Discovery client at %s sending at port %s",
+               self.host, self.port)
         while not self.interrupted:
             self.s.sendto(Sync.broadcastMsg().serialize(), ('255.255.255.255', PORT))
             # TODO: Sync.notifyPeers()
             try:
                 c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
                 if addr[0] != self.host:
-                    self.d( "The server's response is " % c)
+                    self.d( "The server's response is " + c)
                     self.i('New peer')
             except socket.timeout: self.d("Broadcast timed out")
             except: self.e("Broadcast failed")
@@ -90,8 +91,10 @@ class SyncClient(_BaseClient):
 
     def service(self):
         """Discover if there is an active sync application in the LAN."""
-        self.i("Starting Sync client at: %s:%s", self.host, self.port)
+        self.i("Starting Sync client at %s sending at port %s",
+               self.host, self.port)
         while not self.interrupted:
+            msg = None
             try:
                 msg, host = self._queue.get(timeout=BROADCAST_INTERVAL)
                 self.s.sendto(msg.serialize(), (host, PORT))
@@ -99,7 +102,7 @@ class SyncClient(_BaseClient):
                 # quit token
                 pass
             except gaierror:
-                self.e(msg.label + " sending failed")
+                if msg: self.e(msg.label + " sending failed")
         self.i("Stopping Sync client at: %s:%s", self.host, self.port)
 
     def add(self,obj):

@@ -60,7 +60,7 @@ class Git(object):
         self.ignored_files = ignored_files
 
     def commitAll(self, msg, allow_empty=False):
-        dirty = self.repo.is_dirty(untracked_files=True)
+        dirty = self.repo.is_dirty(untracked_files=True) # GitPython > 0.3.2rc1
         if dirty or allow_empty:
             try:
                 if dirty: self._g.add('-A')

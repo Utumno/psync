@@ -54,7 +54,6 @@ class Sync(Log):
             ### Servers/Clients ###
             try:
                 self.__class__.sync_client.start()
-                print Sync.sync_client
             except:
                 self.e("Failed to start Sync client.")
             try:
