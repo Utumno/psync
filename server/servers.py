@@ -1,5 +1,6 @@
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 import SocketServer
+import os
 import socket
 import threading
 from log import Log
@@ -60,8 +61,11 @@ class HttpServer(Log,threading.Thread):
         super(HttpServer, self).__init__(name=self.__class__.__name__,
                                          target=self._task)
         self.host = socket.gethostbyname(socket.gethostname())
+        # cwd = os.getcwd()
+        os.chdir(os.path.abspath(os.sep))
         self.server = SocketServer.TCPServer((self.host, self.PORT),
                                              SimpleHTTPRequestHandler)
+        # os.chdir(cwd) # TODO: serve only repositories
 
     def _task(self):
         self.i("Starting Http server at: %s", self.server.server_address)
