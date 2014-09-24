@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+import datetime
 import shlex
 import os, sys
 import threading
@@ -128,20 +129,35 @@ class Sync(Log):
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
-        git.init()
-        # TODO if a git repo and NOT a sync repo quit
+        was_git = git.init()
         repoid = uniqueid.Uuid.readId(path)
-        if not repoid:
+        if was_git:
+            # TODO allow git repos - VERY difficult
+            if not repoid:
+                # FIXME : go to the root of repository to check if .sync exists
+                cls.cw("%s is already a git repo but not a sync one" % path)
+                return
+            git.commitAll(msg=Sync._now() + ':batch committing changes')
+        else:
+            # TODO: name the dir .sync instead of .git
+            cls.ci('Creating git repo at %s', path)
             repoid = uniqueid.Uuid.create(path)
+            git.commitAll(msg="Initializing:"+ repoid, allow_empty=True)
+            git.updateServerInfo()
+        # Observer setup
         ignored = git.getIgnoredPaths()
-        cls.cd(ignored)
+        # cls.cd(ignored)
         ignored.append(".*\.git.*")
         event_handler = TestEventHandler(git, ignore_regexes=ignored)
         observer = Observer()
         observer.schedule(event_handler, path, recursive=True)
         observer.start()
         Sync._observers.append(observer)
-        Sync._watches[str(repoid)] = abspath
+        Sync._watches[repoid] = abspath
+
+    @staticmethod
+    def _now():
+        return datetime.datetime.now().isoformat()
 
     @staticmethod
     def broadcastMsg():

@@ -8,11 +8,11 @@ class Uuid(Log):
     """Static class that creates and reads the UUID file of the repo."""
     @classmethod
     def create(cls, dir='.'):
-        _id = uuid.uuid4()
+        _id = str(uuid.uuid4())
         try:
             filename = os.path.join(os.path.abspath(dir), UUID_FILENAME)
             with open(filename, "a") as f:
-                f.write(str(_id) + "\n")
+                f.write(_id + "\n")
             return _id
         except:
             cls.ce("Failed to create the file.")

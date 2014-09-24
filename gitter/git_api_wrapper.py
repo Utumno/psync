@@ -1,4 +1,3 @@
-import datetime
 import fnmatch
 import logging
 import os
@@ -31,9 +30,8 @@ class Git(object):
                     excl_regex_patterns.append(fnmatch.translate(line))
             return excl_regex_patterns
 
-    @staticmethod
-    def _now():
-        return datetime.datetime.now().isoformat()
+    def updateServerInfo(self):
+        self._g.update_server_info()
 
     def init(self):
         dir_ = self._dir
@@ -42,18 +40,13 @@ class Git(object):
             self.repo = repo = Repo(dir_)
             self._g = cmd.Git(dir_)
             self._excluder = self._Excluder(ignored_files, repo, append=True)
-            return self.commitAll(
-                msg=self._now() + '- batch committing changes')
+            return True
         except InvalidGitRepositoryError:
-            # TODO: name the dir .sync instead of .git
-            logging.info('Creating git repo at %s', dir_)
             self._g = _g = cmd.Git(dir_)
             _g.init()
             self.repo = repo = Repo(dir_)
             self._excluder = self._Excluder(ignored_files, repo)
-            commit_all = self.commitAll(msg="Initial commit", allow_empty=True)
-            _g.update_server_info()
-            return commit_all
+        return False
 
     def __init__(self, dir_, ignored_files=None):
         if not os.path.isdir(dir_): raise RuntimeError(
