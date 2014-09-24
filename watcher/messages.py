@@ -19,6 +19,8 @@ class Message(object):
             return DiscoveryMSG(uuids,_from)
         elif fields[0] == LABEL + 'REQUEST':
             return RequestMSG(fields[1], fields[2], _from)
+        elif fields[0] == LABEL + 'REQUEST_ACCEPT':
+            return AcceptRequestMSG(fields[1], fields[2], fields[3], _from)
         else:
             raise UnknownMessageException
 
@@ -54,3 +56,23 @@ class RequestMSG(Message):
     def handle(self):
         if self._from:
             watcher.sync.Sync.newRequestServer(self._from, self.host, self.repo)
+
+class AcceptRequestMSG(Message):
+    """"""
+
+    def __init__(self, host, repo, path, _from=None):
+        super(AcceptRequestMSG, self).__init__()
+        self.label = LABEL + 'REQUEST_ACCEPT'
+        self.host = host
+        self.repo = repo
+        self.path = path
+        self._from = _from
+
+    def serialize(self):
+        return FIELD_SEPARATOR.join(
+            (self.label, self.host, self.repo, self.path))
+
+    def handle(self):
+        if self._from:
+            watcher.sync.Sync.acceptedRequest(self._from, self.host, self.repo,
+                                              self.path)

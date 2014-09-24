@@ -10,7 +10,7 @@ from server import uniqueid
 from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
-from watcher.messages import DiscoveryMSG, RequestMSG
+from watcher.messages import DiscoveryMSG, RequestMSG, AcceptRequestMSG
 
 VERSION = 0.1
 
@@ -25,11 +25,13 @@ class Sync(Log):
     _peers = {}
     _requests = {}
     _requests_made = {}
+    _requests_accepted = {}
     _lock_observers = threading.RLock()
     _lock_watches = threading.RLock() # use this for observers too
     _lock_peers = threading.RLock()
     _lock_requests = threading.RLock()
     _lock_requests_made = threading.RLock()
+    _lock_requests_accepted = threading.RLock()
     sync_client = None
 
     def __init__(self):
@@ -157,9 +159,14 @@ class Sync(Log):
             Log.ci(msg % (_from,))
 
     @classmethod
-    def newRequestClient(cls,host, repo):
-        # print cls.sync_client
-        # print Sync.sync_client
+    def newRequestClient(cls, host, repo):
+        if repo in Sync._watches.keys():
+            with Sync._lock_requests_accepted, Sync._lock_watches:
+                old_reqs = Sync._requests_accepted.get(host, set())
+                Sync._requests_accepted[host] = old_reqs | {repo}
+            cls.sync_client.add((AcceptRequestMSG(host,repo, Sync._watches[repo]),host))
+            cls.ci("Accepted request from %s for %s" % (host, repo))
+            return
         with Sync._lock_requests_made:
             old_reqs = Sync._requests_made.get(host, set())
             Sync._requests_made[host] = old_reqs | {repo}
@@ -172,6 +179,11 @@ class Sync(Log):
             old_reqs = Sync._requests.get(_from[0], set())
             Sync._requests[_from[0]] = old_reqs | {repo}
         cls.ci("New request from %s for %s" % (_from[0], repo))
+
+    @classmethod
+    def acceptedRequest(cls, _from, host, repo, path):
+        cls.ci(
+            "Request to %s for %s accepted - path: %s" % (_from, repo, path))
 
 if __name__ == "__main__":
     from watcher.sync import Sync
