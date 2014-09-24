@@ -51,7 +51,9 @@ class Git(object):
             _g.init()
             self.repo = repo = Repo(dir_)
             self._excluder = self._Excluder(ignored_files, repo)
-            return self.commitAll(msg="Initial commit", allow_empty=True)
+            commit_all = self.commitAll(msg="Initial commit", allow_empty=True)
+            _g.update_server_info()
+            return commit_all
 
     def __init__(self, dir_, ignored_files=None):
         if not os.path.isdir(dir_): raise RuntimeError(
@@ -85,8 +87,11 @@ class Git(object):
         elif not os.path.isdir(clone_path):
             Log.cw("%s is not a directory" % clone_path)
         self._g = _g = cmd.Git(clone_path)
+        # path = str(path).split(os.path.abspath(os.sep))[0]
+        path = os.path.normcase(os.path.normpath(path))
+        path = path.replace('\\', '/')
         _g.clone(
-            "http://" + host + ':8002' + '/' + path + os.path.sep + '.git',
+            "http://" + host + ':8002' + '/' + path + '/' + '.git',
             os.path.join(clone_path, repo))
 
     def getIgnoredPaths(self):
