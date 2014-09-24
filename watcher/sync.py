@@ -26,15 +26,20 @@ class Sync(Log):
     # _Tree classes that keep info on directory trees being watched
     _watches = {}
     _peers = {}
-    _requests = {}
-    _requests_made = {}
+    # requests made to the server (us)
+    _requests_pending = {}
     _requests_accepted = {}
+    # request made to the remote server
+    _requests_made = {}
+    _pull_repos = {}
+    # Locks
     _lock_observers = threading.RLock()
     _lock_watches = threading.RLock() # use this for observers too
     _lock_peers = threading.RLock()
-    _lock_requests = threading.RLock()
+    _lock_requests_pending = threading.RLock()
     _lock_requests_made = threading.RLock()
     _lock_requests_accepted = threading.RLock()
+    _lock_pull_repos = threading.RLock()
     sync_client = None
     # http://stackoverflow.com/a/4028943/281545
     home = expanduser("~")
@@ -186,12 +191,29 @@ class Sync(Log):
     @classmethod
     def newRequestClient(cls, host, repo):
         if repo in Sync._watches.keys():
-            with Sync._lock_requests_accepted, Sync._lock_watches:
+            with Sync._lock_requests_accepted, Sync._lock_watches, \
+                 Sync._lock_requests_pending:
+                try:
+                    old_reqs = Sync._requests_pending[host]
+                    if not repo in old_reqs:
+                        cls.cw(
+                            "No pending request from %s for %s" % (host, repo))
+                        return
+                    Sync._requests_pending[host] = old_reqs - {repo}
+                except KeyError:
+                    cls.cw("No pending requests from %s" % host)
+                    return
                 old_reqs = Sync._requests_accepted.get(host, set())
                 Sync._requests_accepted[host] = old_reqs | {repo}
-            cls.sync_client.add((AcceptRequestMSG(host,repo, Sync._watches[repo]),host))
+            cls.sync_client.add(
+                (AcceptRequestMSG(host, repo, Sync._watches[repo]), host))
             cls.ci("Accepted request from %s for %s" % (host, repo))
             return
+        # else: # FIXME - the repo is not watched by us - used here to
+        # differentiate client/server - wrong
+        #     cls.ci("Can not accept request from %s for %s - repo not watched"
+        #  % (host, repo))
+        #     return
         with Sync._lock_requests_made:
             old_reqs = Sync._requests_made.get(host, set())
             Sync._requests_made[host] = old_reqs | {repo}
@@ -200,17 +222,37 @@ class Sync(Log):
 
     @classmethod
     def newRequestServer(cls, _from, host, repo):
-        with Sync._lock_requests:
-            old_reqs = Sync._requests.get(_from[0], set())
-            Sync._requests[_from[0]] = old_reqs | {repo}
+        with Sync._lock_requests_pending:
+            old_reqs = Sync._requests_pending.get(_from[0], set())
+            Sync._requests_pending[_from[0]] = old_reqs | {repo}
         cls.ci("New request from %s for %s" % (_from[0], repo))
 
     @classmethod
     def acceptedRequest(cls, _from, host, repo, path):
+        with Sync._lock_requests_made, Sync._lock_pull_repos:
+            try:
+                old_reqs = Sync._requests_made[_from[0]]
+                if not repo in old_reqs:
+                    cls.cw(
+                        "No pending request to %s for %s" % (_from[0], repo))
+                    return
+                Sync._requests_made[_from[0]] = old_reqs - {repo}
+            except KeyError:
+                cls.cw("No request made to %s for %s" % (_from[0], repo))
+                return
+            old_reqs = Sync._pull_repos.get(_from[0], set())
+            Sync._pull_repos[_from[0]] = old_reqs | {repo}
         cls.ci(
             "Request to %s for %s accepted - path: %s" % (_from, repo, path))
         git = git_api_wrapper.Git(Sync.app_path)
         git.clone(Sync.app_path, _from[0], path, repo)
+        cls.addObserver(os.path.join(Sync.app_path,repo))
+
+    @classmethod
+    def pullAll(cls):
+        with Sync._lock_pull_repos:
+            for host, repo in cls._pull_repos:
+                pass
 
 if __name__ == "__main__":
     from watcher.sync import Sync
