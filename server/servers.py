@@ -54,7 +54,7 @@ class DiscoveryServer(Log,threading.Thread):
 
 class HttpServer(Log,threading.Thread):
     # Thread's superclass does not call super.init() so I had to put Log First
-    PORT = 80
+    PORT = 8002
 
     def __init__(self):
         super(HttpServer, self).__init__(name=self.__class__.__name__,

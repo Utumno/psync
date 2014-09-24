@@ -2,6 +2,8 @@
 import shlex
 import os, sys
 import threading
+from os.path import expanduser
+# watchdog
 from watchdog.observers import Observer
 # internal imports
 from log import Log
@@ -33,6 +35,14 @@ class Sync(Log):
     _lock_requests_made = threading.RLock()
     _lock_requests_accepted = threading.RLock()
     sync_client = None
+    # http://stackoverflow.com/a/4028943/281545
+    home = expanduser("~")
+    app_path = os.path.abspath(os.path.join(home,'.sync'))
+    if not os.path.exists(app_path):
+        Log.ci("Creating directory %s" % app_path)
+        os.makedirs(app_path)
+    elif not os.path.isdir(app_path):
+        Log.cw("%s is not a directory" % app_path)
 
     def __init__(self):
         super(Sync, self).__init__()
@@ -184,6 +194,8 @@ class Sync(Log):
     def acceptedRequest(cls, _from, host, repo, path):
         cls.ci(
             "Request to %s for %s accepted - path: %s" % (_from, repo, path))
+        git = git_api_wrapper.Git(Sync.app_path)
+        git.clone(Sync.app_path, _from[0], path, repo)
 
 if __name__ == "__main__":
     from watcher.sync import Sync

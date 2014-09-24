@@ -3,6 +3,7 @@ import fnmatch
 import logging
 import os
 from  git import Repo, InvalidGitRepositoryError, cmd, exc
+from log import Log
 
 class Git(object):
     class _Excluder(object):
@@ -76,6 +77,17 @@ class Git(object):
             self._g.commit(m=msg)
             return True
         return False
+
+    def clone(self, clone_path, host, path, repo):
+        if not os.path.exists(clone_path):
+            Log.ci("Creating directory %s" % clone_path)
+            os.makedirs(clone_path)
+        elif not os.path.isdir(clone_path):
+            Log.cw("%s is not a directory" % clone_path)
+        self._g = _g = cmd.Git(clone_path)
+        _g.clone(
+            "http://" + host + ':8002' + '/' + path + os.path.sep + '.git',
+            os.path.join(clone_path, repo))
 
     def getIgnoredPaths(self):
         return self._excluder.getIgnoredPaths()
