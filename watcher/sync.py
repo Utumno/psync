@@ -140,6 +140,7 @@ class Sync(Log):
             # TODO allow git repos - VERY difficult
             if not repoid:
                 # FIXME : go to the root of repository to check if .sync exists
+                # use rev-parse --show-toplevel
                 cls.cw("%s is already a git repo but not a sync one" % path)
                 return
             git.commitAll(msg=Sync._now() + ':batch committing changes')
@@ -148,7 +149,6 @@ class Sync(Log):
             cls.ci('Creating git repo at %s', path)
             repoid = uniqueid.Uuid.create(path)
             git.commitAll(msg="Initializing:"+ repoid, allow_empty=True)
-            git.updateServerInfo()
         # Observer setup
         ignored = git.getIgnoredPaths()
         # cls.cd(ignored)

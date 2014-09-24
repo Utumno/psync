@@ -30,7 +30,7 @@ class Git(object):
                     excl_regex_patterns.append(fnmatch.translate(line))
             return excl_regex_patterns
 
-    def updateServerInfo(self):
+    def _updateServerInfo(self):
         self._g.update_server_info()
 
     def init(self):
@@ -55,6 +55,10 @@ class Git(object):
         self.ignored_files = ignored_files
 
     def commitAll(self, msg, allow_empty=False):
+        if self._commitAll(msg, allow_empty):
+            self._updateServerInfo()
+
+    def _commitAll(self, msg, allow_empty=False):
         dirty = self.repo.is_dirty(untracked_files=True) # GitPython > 0.3.2rc1
         if dirty or allow_empty:
             try:
