@@ -55,7 +55,7 @@ class Sync(Log):
         self.__class__.sync_client = sr.clients.SyncClient()
 
     def main(self):
-        server, client, http = None, None, None
+        server, client, http, pullservice = None, None, None, None
         try:
             ### Servers/Clients ###
             try:
@@ -72,6 +72,11 @@ class Sync(Log):
                 client.start()
             except:
                 self.e("Failed to start Discovery client.")
+            try:
+                pullservice = sr.clients.PullService()
+                pullservice.start()
+            except:
+                self.e("Failed to start the pull service.")
             try:
                 http = sr.servers.HttpServer()
                 http.start()
@@ -111,6 +116,9 @@ class Sync(Log):
             if client:
                 client.shutdown()
                 client.join()
+            if pullservice:
+                pullservice.shutdown()
+                pullservice.join()
             if self.__class__.sync_client:
                 self.__class__.sync_client.shutdown()
                 self.__class__.sync_client.join()
@@ -207,6 +215,8 @@ class Sync(Log):
                 Sync._requests_accepted[host] = old_reqs | {repo}
             cls.sync_client.add(
                 (AcceptRequestMSG(host, repo, Sync._watches[repo]), host))
+            #enter the info of the other in the .conf file
+            # and then delete/update for the next time
             cls.ci("Accepted request from %s for %s" % (host, repo))
             return
         # else: # FIXME - the repo is not watched by us - used here to
@@ -252,6 +262,11 @@ class Sync(Log):
     def pullAll(cls):
         with Sync._lock_pull_repos:
             for host, repo in cls._pull_repos:
+                # I need path.
+                # Change the path directory? Not necessary if giving the
+                # right path in pull command
+                # How are pulls from multiple machines handled? Need to send
+                # msg to temporarily stop the service(BroadCast or Send)
                 pass
 
 if __name__ == "__main__":

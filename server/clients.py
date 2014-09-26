@@ -10,6 +10,7 @@ _BROADCAST = 0
 _TCP = 1
 
 BROADCAST_INTERVAL = TIMEOUT = 5 # TODO
+PULL_INTERVAL = 20
 PORT = 8001
 
 class _BaseClient(threading.Thread,Log):
@@ -107,6 +108,28 @@ class SyncClient(_BaseClient):
 
     def add(self,obj):
         self._queue.put(obj)
+
+    def shutdown(self):
+        self.interrupted = True
+
+class PullService(threading.Thread, Log):
+    """ Automating update of the repos
+    """
+
+    def __init__(self, pull_interval=PULL_INTERVAL):
+        super(PullService, self).__init__(name=self.__class__.__name__,
+                                              target=self._task)
+        Log.__init__(self)
+        self.pull_interval = pull_interval
+        self.interrupted = False
+
+    def _task(self):
+        """Pull repos from the pull_repos dictionary"""
+        self.i("Starting Pull service")
+        while not self.interrupted:
+            Sync.pullAll()
+            sleep(self.pull_interval)
+        self.i("Stopping PullService")
 
     def shutdown(self):
         self.interrupted = True
