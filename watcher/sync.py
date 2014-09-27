@@ -229,11 +229,11 @@ class Sync(Log):
         with Sync._lock_requests_made:
             old_reqs = Sync._requests_made.get(host, set())
             Sync._requests_made[host] = old_reqs | {repo}
-        cls.sync_client.add((RequestMSG(host,repo),host))
+        cls.sync_client.add((RequestMSG(repo),host))
         cls.cd("New request sent to %s for %s" % (host, repo))
 
     @classmethod
-    def newRequestServer(cls, _from, host, repo):
+    def newRequestServer(cls, _from, repo):
         with Sync._lock_requests_pending:
             old_reqs = Sync._requests_pending.get(_from[0], set())
             Sync._requests_pending[_from[0]] = old_reqs | {repo}

@@ -20,7 +20,7 @@ class Message(object):
             uuids = fields[1].split(SUBFIELD_SEPARATOR) if fields[1] else []
             return DiscoveryMSG(uuids,_from)
         elif fields[0] == LABEL + 'REQUEST':
-            return RequestMSG(fields[1], fields[2], _from)
+            return RequestMSG(fields[1], _from)
         elif fields[0] == LABEL + 'REQUEST_ACCEPT':
             return AcceptRequestMSG(fields[1], fields[2], _from)
         elif fields[0] == LABEL + 'CLONE_SUCCESS':
@@ -46,18 +46,17 @@ class DiscoveryMSG(Message):
 
 class RequestMSG(Message):
     """Client sends this message to request from host the repo given."""
-    def __init__(self, host, repo, _from=None):
+    def __init__(self, repo, _from=None):
         super(RequestMSG, self).__init__(_from)
         self.label = LABEL + 'REQUEST'
-        self.host = host
         self.repo = repo
 
     def serialize(self):
-        return FIELD_SEPARATOR.join((self.label, self.host, self.repo))
+        return FIELD_SEPARATOR.join((self.label, self.repo))
 
     def handle(self):
         if not self._from: raise RuntimeError("Sender unfilled.")
-        watcher.sync.Sync.newRequestServer(self._from, self.host, self.repo)
+        watcher.sync.Sync.newRequestServer(self._from, self.repo)
 
 class AcceptRequestMSG(Message):
     """Server sends this message to permit the client to clone a repo."""
