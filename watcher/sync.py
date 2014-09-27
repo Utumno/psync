@@ -13,7 +13,8 @@ from server import uniqueid
 from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
-from watcher.messages import DiscoveryMSG, RequestMSG, AcceptRequestMSG
+from watcher.messages import DiscoveryMSG, RequestMSG, AcceptRequestMSG, \
+    CloneSucceededMSG
 
 VERSION = 0.1
 
@@ -215,7 +216,7 @@ class Sync(Log):
                 old_reqs = Sync._requests_accepted.get(host, set())
                 Sync._requests_accepted[host] = old_reqs | {repo}
             cls.sync_client.add(
-                (AcceptRequestMSG(host, repo, Sync._watches[repo]), host))
+                (AcceptRequestMSG(repo, Sync._watches[repo]), host))
             #enter the info of the other in the .conf file
             # and then delete/update for the next time
             cls.ci("Accepted request from %s for %s" % (host, repo))
@@ -239,7 +240,7 @@ class Sync(Log):
         cls.ci("New request from %s for %s" % (_from[0], repo))
 
     @classmethod
-    def acceptedRequest(cls, _from, host, repo, path):
+    def acceptedRequest(cls, _from, repo, path):
         with Sync._lock_requests_made, Sync._lock_pull_repos:
             try:
                 old_reqs = Sync._requests_made[_from[0]]
@@ -252,13 +253,14 @@ class Sync(Log):
                 cls.cw("No request made to %s for %s" % (_from[0], repo))
                 return
             old_reqs = Sync._pull_repos.get(_from[0], set())
-            Sync._pull_repos[_from[0]] = old_reqs | {repo}
+            Sync._pull_repos[_from[0]] = old_reqs | {(repo,path)}
         cls.ci(
             "Request to %s for %s accepted - path: %s" % (_from, repo, path))
         git = git_api_wrapper.Git(Sync.app_path)
         git.clone(Sync.app_path, _from[0], path, repo)
         clone_path = os.path.join(Sync.app_path, repo)
         cls.addObserver(clone_path)
+        cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
 
     @classmethod
     def pullAll(cls):
@@ -270,6 +272,10 @@ class Sync(Log):
                 # How are pulls from multiple machines handled? Need to send
                 # msg to temporarily stop the service(BroadCast or Send)
                 pass
+
+    @classmethod
+    def cloneSucceeded(cls, _from, repo, clone_path):
+        pass
 
 if __name__ == "__main__":
     from watcher.sync import Sync

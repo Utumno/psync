@@ -20,7 +20,9 @@ class Message(object):
         elif fields[0] == LABEL + 'REQUEST':
             return RequestMSG(fields[1], fields[2], _from)
         elif fields[0] == LABEL + 'REQUEST_ACCEPT':
-            return AcceptRequestMSG(fields[1], fields[2], fields[3], _from)
+            return AcceptRequestMSG(fields[1], fields[2], _from)
+        elif fields[0] == LABEL + 'CLONE_SUCCESS':
+            return CloneSucceededMSG(fields[1], fields[2], _from)
         else:
             raise UnknownMessageException
 
@@ -61,19 +63,34 @@ class RequestMSG(Message):
 class AcceptRequestMSG(Message):
     """Server sends this message to permit the client to clone a repo."""
 
-    def __init__(self, host, repo, path, _from=None):
+    def __init__(self, repo, path, _from=None):
         super(AcceptRequestMSG, self).__init__()
         self.label = LABEL + 'REQUEST_ACCEPT'
-        self.host = host
         self.repo = repo
         self.path = path
         self._from = _from
 
     def serialize(self):
-        return FIELD_SEPARATOR.join(
-            (self.label, self.host, self.repo, self.path))
+        return FIELD_SEPARATOR.join((self.label, self.repo, self.path))
 
     def handle(self):
         if self._from:
-            watcher.sync.Sync.acceptedRequest(self._from, self.host, self.repo,
-                                              self.path)
+            watcher.sync.Sync.acceptedRequest(self._from, self.repo, self.path)
+
+class CloneSucceededMSG(Message):
+    """Send by the client to the server so the server can also pull."""
+
+    def __init__(self, repo, clone_path, _from=None):
+        super(CloneSucceededMSG, self).__init__()
+        self.label = LABEL + 'CLONE_SUCCESS'
+        self.repo = repo
+        self.clone_path = clone_path
+        self._from = _from
+
+    def serialize(self):
+        return FIELD_SEPARATOR.join((self.label, self.repo, self.clone_path))
+
+    def handle(self):
+        if self._from:
+            watcher.sync.Sync.cloneSucceeded(self._from, self.repo,
+                                             self.clone_path)
