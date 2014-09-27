@@ -32,6 +32,8 @@ class DiscoveryServer(Log,threading.Thread):
                 msg.handle()
             except UnknownMessageException:
                 pass
+            except:
+                self.e("Exception during message handling.")
 
     def __init__(self):
         super(DiscoveryServer, self).__init__(name=self.__class__.__name__,

@@ -67,7 +67,10 @@ class DiscoveryClient(_BaseClient):
                self.host, self.port)
         while not self.interrupted:
             self.s.sendto(Sync.broadcastMsg().serialize(), ('255.255.255.255', PORT))
-            # TODO: Sync.notifyPeers()
+            try:
+                Sync.pullAll()
+            except:
+                self.e('Error pulling.')
             try:
                 c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
                 if addr[0] != self.host:
@@ -126,7 +129,6 @@ class PullService(threading.Thread, Log):
         """Pull repos from the pull_repos dictionary"""
         self.i("Starting Pull service")
         while not self.interrupted:
-            Sync.pullAll()
             sleep(self.pull_interval)
         self.i("Stopping PullService")
 
