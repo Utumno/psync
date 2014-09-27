@@ -8,11 +8,13 @@ class UnknownMessageException(Exception):
     pass
 
 class Message(object):
-    def __init__(self):
+    def __init__(self, _from=None):
         super(Message, self).__init__()
+        # _from is assigned in deserialize() by the DiscoveryServer
+        self._from = _from
 
     @staticmethod
-    def deserialize(message,_from=None):
+    def deserialize(message,_from):
         fields = message.split(FIELD_SEPARATOR)
         if fields[0] == LABEL + 'DISCOVERY':
             uuids = fields[1].split(SUBFIELD_SEPARATOR) if fields[1] else []
@@ -30,67 +32,61 @@ class Message(object):
 
 class DiscoveryMSG(Message):
     def __init__(self, uuids,_from=None):
-        super(DiscoveryMSG, self).__init__()
+        super(DiscoveryMSG, self).__init__(_from)
         self.label = LABEL + 'DISCOVERY'
         self.uuids = set(uuids) if uuids else set()
-        self._from = _from
 
     def serialize(self):
         field = SUBFIELD_SEPARATOR.join(map(str,self.uuids))
         return FIELD_SEPARATOR.join((self.label, field))
 
     def handle(self):
-        if self._from:
-            watcher.sync.Sync.newPeer(self._from,self.uuids)
+        if not self._from: raise RuntimeError("Sender unfilled.")
+        watcher.sync.Sync.newPeer(self._from,self.uuids)
 
 class RequestMSG(Message):
     """Client sends this message to request from host the repo given."""
     def __init__(self, host, repo, _from=None):
-        super(RequestMSG, self).__init__()
+        super(RequestMSG, self).__init__(_from)
         self.label = LABEL + 'REQUEST'
         self.host = host
         self.repo = repo
-        self._from = _from
 
     def serialize(self):
         return FIELD_SEPARATOR.join((self.label, self.host, self.repo))
 
     def handle(self):
-        if self._from:
-            watcher.sync.Sync.newRequestServer(self._from, self.host,
-                                               self.repo)
+        if not self._from: raise RuntimeError("Sender unfilled.")
+        watcher.sync.Sync.newRequestServer(self._from, self.host, self.repo)
 
 class AcceptRequestMSG(Message):
     """Server sends this message to permit the client to clone a repo."""
 
     def __init__(self, repo, path, _from=None):
-        super(AcceptRequestMSG, self).__init__()
+        super(AcceptRequestMSG, self).__init__(_from)
         self.label = LABEL + 'REQUEST_ACCEPT'
         self.repo = repo
         self.path = path
-        self._from = _from
 
     def serialize(self):
         return FIELD_SEPARATOR.join((self.label, self.repo, self.path))
 
     def handle(self):
-        if self._from:
-            watcher.sync.Sync.acceptedRequest(self._from, self.repo, self.path)
+        if not self._from: raise RuntimeError("Sender unfilled.")
+        watcher.sync.Sync.acceptedRequest(self._from, self.repo, self.path)
 
 class CloneSucceededMSG(Message):
     """Send by the client to the server so the server can also pull."""
 
     def __init__(self, repo, clone_path, _from=None):
-        super(CloneSucceededMSG, self).__init__()
+        super(CloneSucceededMSG, self).__init__(_from)
         self.label = LABEL + 'CLONE_SUCCESS'
         self.repo = repo
-        self.clone_path = clone_path
-        self._from = _from
+        self.clonePath = clone_path
 
     def serialize(self):
-        return FIELD_SEPARATOR.join((self.label, self.repo, self.clone_path))
+        return FIELD_SEPARATOR.join((self.label, self.repo, self.clonePath))
 
     def handle(self):
-        if self._from:
-            watcher.sync.Sync.cloneSucceeded(self._from, self.repo,
-                                             self.clone_path)
+        if not self._from: raise RuntimeError("Sender unfilled.")
+        watcher.sync.Sync.cloneSucceeded(self._from, self.repo, self.clonePath)
