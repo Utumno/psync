@@ -55,10 +55,11 @@ class RequestMSG(Message):
 
     def handle(self):
         if self._from:
-            watcher.sync.Sync.newRequestServer(self._from, self.host, self.repo)
+            watcher.sync.Sync.newRequestServer(self._from, self.host,
+                                               self.repo)
 
 class AcceptRequestMSG(Message):
-    """"""
+    """Server sends this message to permit the client to clone a repo."""
 
     def __init__(self, host, repo, path, _from=None):
         super(AcceptRequestMSG, self).__init__()

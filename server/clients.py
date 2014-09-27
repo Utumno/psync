@@ -97,8 +97,8 @@ class SyncClient(_BaseClient):
         while not self.interrupted:
             msg = None
             try:
-                msg, host = self._queue.get(timeout=BROADCAST_INTERVAL)
-                self.s.sendto(msg.serialize(), (host, PORT))
+                msg, destination = self._queue.get(timeout=BROADCAST_INTERVAL)
+                self.s.sendto(msg.serialize(), (destination, PORT))
             except Empty:  # for the timeout - TODO - no timeout and special
                 # quit token
                 pass

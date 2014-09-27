@@ -12,7 +12,7 @@ class Share(Command):
             # questions/13181559#comment17940192_13181615
             setattr(namespace, self.dest, values)
             # print sync.Sync.sync_client
-            Sync.newRequestClient(host=namespace.host, repo=values)
+            Sync.newRequest(host=namespace.host, repo=values)
 
     CMD_NAME = 'share'
     CMD_HELP = 'Request to share a repo.'

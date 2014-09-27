@@ -197,7 +197,8 @@ class Sync(Log):
             Log.ci(msg % (_from,))
 
     @classmethod
-    def newRequestClient(cls, host, repo):
+    def newRequest(cls, host, repo):
+        """Used by client and server - FIXME"""
         if repo in Sync._watches.keys():
             with Sync._lock_requests_accepted, Sync._lock_watches, \
                  Sync._lock_requests_pending:
@@ -256,12 +257,13 @@ class Sync(Log):
             "Request to %s for %s accepted - path: %s" % (_from, repo, path))
         git = git_api_wrapper.Git(Sync.app_path)
         git.clone(Sync.app_path, _from[0], path, repo)
-        cls.addObserver(os.path.join(Sync.app_path,repo))
+        clone_path = os.path.join(Sync.app_path, repo)
+        cls.addObserver(clone_path)
 
     @classmethod
     def pullAll(cls):
         with Sync._lock_pull_repos:
-            for host, repo in cls._pull_repos:
+            for host, repo in cls._pull_repos.items():
                 # I need path.
                 # Change the path directory? Not necessary if giving the
                 # right path in pull command
