@@ -9,8 +9,7 @@ from watcher.sync import Sync
 _BROADCAST = 0
 _TCP = 1
 
-BROADCAST_INTERVAL = TIMEOUT = 5 # TODO
-PULL_INTERVAL = 20
+BROADCAST_INTERVAL = PULL_INTERVAL = TIMEOUT = 5 # TODO
 PORT = 8001
 
 class _BaseClient(threading.Thread,Log):

@@ -84,12 +84,22 @@ class Git(object):
         elif not os.path.isdir(clone_path):
             Log.cw("%s is not a directory" % clone_path)
         self._g = _g = cmd.Git(clone_path)
-        # path = str(path).split(os.path.abspath(os.sep))[0]
+        # path = str(path).split(os.path.abspath(os.sep))[0] # not needed
         path = os.path.normcase(os.path.normpath(path))
         path = path.replace('\\', '/')
-        _g.clone(
+        _g.clone("-o" + host,
             "http://" + host + ':8002' + '/' + path + '/' + '.git',
             os.path.join(clone_path, repo))
+
+    def addRemote(self, remote_ip, clone_path):
+        clone_path = os.path.normcase(os.path.normpath(clone_path))
+        clone_path = clone_path.replace('\\', '/')
+        self._g.remote("add", remote_ip,
+                       "http://" + remote_ip + ':8002' + '/' + clone_path +
+                       '/.git')
+
+    def pull(self, host):
+        self._g.pull(host)
 
     def getIgnoredPaths(self):
         return self._excluder.getIgnoredPaths()

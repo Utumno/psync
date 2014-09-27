@@ -135,11 +135,11 @@ class Sync(Log):
             cls.cw("%s is not a directory" % abspath)
             return
         # FIXME: LOCKING !!!!!
-        for id_, path_ in Sync._watches.iteritems():
-            if abspath.startswith(path_ + os.path.sep):
+        for id_, tuple_ in Sync._watches.iteritems():
+            if abspath.startswith(tuple_[0] + os.path.sep):
                 # TODO: check parent folders
                 cls.cw("%s is a subpath of %s which you already watch" % (
-                    path, path_))
+                    path, tuple_[0]))
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
         git = git_api_wrapper.Git(path, ignored_files=ignored_files)
@@ -167,7 +167,7 @@ class Sync(Log):
         observer.schedule(event_handler, path, recursive=True)
         observer.start()
         Sync._observers.append(observer)
-        Sync._watches[repoid] = abspath
+        Sync._watches[repoid] = (abspath, git)
 
     @staticmethod
     def _now():
@@ -252,30 +252,40 @@ class Sync(Log):
             except KeyError:
                 cls.cw("No request made to %s for %s" % (_from[0], repo))
                 return
-            old_reqs = Sync._pull_repos.get(_from[0], set())
-            Sync._pull_repos[_from[0]] = old_reqs | {(repo,path)}
         cls.ci(
             "Request to %s for %s accepted - path: %s" % (_from, repo, path))
         git = git_api_wrapper.Git(Sync.app_path)
         git.clone(Sync.app_path, _from[0], path, repo)
         clone_path = os.path.join(Sync.app_path, repo)
-        cls.addObserver(clone_path)
+        cls.addObserver(clone_path) # FIXME: I should pass git as a parameter
         cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
+        old_reqs = Sync._pull_repos.get(_from[0], set())
+        Sync._pull_repos[_from[0]] = old_reqs | {(repo,path)}
 
     @classmethod
     def pullAll(cls):
-        with Sync._lock_pull_repos:
-            for host, repo in cls._pull_repos.items():
-                # I need path.
-                # Change the path directory? Not necessary if giving the
-                # right path in pull command
-                # How are pulls from multiple machines handled? Need to send
-                # msg to temporarily stop the service(BroadCast or Send)
-                pass
+        with Sync._lock_pull_repos, Sync._lock_watches:
+            for host, repo_info in cls._pull_repos.items():
+                for reps in repo_info:
+                    repo = reps[0]
+                    remote_path = reps[1]
+                    git = Sync._watches[repo][1]
+                    git.pull(host)
+                    # How are pulls from multiple machines handled? Need to send
+                    # msg to temporarily stop the service(BroadCast or Send)
 
     @classmethod
     def cloneSucceeded(cls, _from, repo, clone_path):
-        pass
+        with cls._lock_pull_repos, cls._lock_watches:
+            try:
+                git = cls._watches[repo][1]
+            except KeyError:
+                cls.cw("%s cloned repo %s which is not watched." % ( _from[0],
+                    repo))
+                return
+            git.addRemote(_from[0], clone_path)
+            old_reqs = Sync._pull_repos.get(_from[0], set())
+            Sync._pull_repos[_from[0]] = old_reqs | {(repo, clone_path)}
 
 if __name__ == "__main__":
     from watcher.sync import Sync

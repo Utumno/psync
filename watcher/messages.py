@@ -61,11 +61,12 @@ class RequestMSG(Message):
 class AcceptRequestMSG(Message):
     """Server sends this message to permit the client to clone a repo."""
 
-    def __init__(self, repo, path, _from=None):
+    def __init__(self, repo, watch_tuple, _from=None):
         super(AcceptRequestMSG, self).__init__(_from)
         self.label = LABEL + 'REQUEST_ACCEPT'
         self.repo = repo
-        self.path = path
+        self.path = watch_tuple[0] if isinstance(watch_tuple,
+                                                 tuple) else watch_tuple
 
     def serialize(self):
         return FIELD_SEPARATOR.join((self.label, self.repo, self.path))
