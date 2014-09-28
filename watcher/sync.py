@@ -265,14 +265,14 @@ class Sync(Log):
         print repoid
         if repoid == repo:
             Log.ci("Repository %s is already cloned." % repo)
-        elif repo:
+        elif repoid:
             Log.cw("Trying to clone %s into %s " % (repo, repoid))
             return
         else:
             git.clone(Sync.app_path, _from[0], path, repo)
         # just add the observer (and add to _watches) - clone is _asynchronous_
         time.sleep(5) # FIXME: is clone really asynchronous ?
-        cls._addObserver(clone_path, git, repoid)
+        cls._addObserver(clone_path, git, repo)
         cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
         with Sync._lock_pull_repos:
             old_reqs = Sync._pull_repos.get(_from[0], set())

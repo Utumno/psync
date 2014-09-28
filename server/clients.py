@@ -66,6 +66,7 @@ class DiscoveryClient(_BaseClient):
         self.i("Starting Discovery client at %s sending at port %s",
                self.host, self.port)
         while not self.interrupted:
+            self.i("Client") # FIXME - deadlock if pullAll doesn't raise ?
             self.s.sendto(Sync.broadcastMsg().serialize(), ('255.255.255.255', PORT))
             try:
                 Sync.pullAll()

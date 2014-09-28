@@ -32,19 +32,16 @@ class Git(object):
             return excl_regex_patterns
 
     def _updateServerInfo(self):
-        self._g.update_server_info()
+        self.cmd.update_server_info()
 
     def init(self):
-        dir_ = self._dir
         ignored_files = self.ignored_files
         try:  # http://stackoverflow.com/a/23666860/281545
-            self._g = cmd.Git(dir_)
             self._excluder = Git._Excluder(ignored_files, self.repo,
                                            append=True)
             return True
         except InvalidGitRepositoryError:
-            self._g = _g = cmd.Git(dir_)
-            _g.init()
+            self.cmd.init()
             self._excluder = Git._Excluder(ignored_files, self.repo)
         return False
 
@@ -58,8 +55,14 @@ class Git(object):
             self._repo = Repo(self._dir)
         return self._repo
 
+    def get_cmd(self):
+        if not hasattr(self, '_g'):
+            self._g = cmd.Git(self._dir)
+        return self._g
+
     excluder = property(get_excluder)
     repo = property(get_repo)
+    cmd = property(get_cmd)
 
     def __init__(self, dir_, ignored_files=None):
         if not os.path.isdir(dir_): raise RuntimeError(
@@ -75,40 +78,41 @@ class Git(object):
         dirty = self.repo.is_dirty(untracked_files=True) # GitPython > 0.3.2rc1
         if dirty or allow_empty:
             try:
-                if dirty: self._g.add('-A')
+                if dirty: self.cmd.add('-A')
             except exc.GitCommandError:
                 # see: http://stackoverflow.com/a/21078070/281545
                 logging.exception("add('-A') failed")
                 if allow_empty :
-                    self._g.commit("--allow-empty",m=msg)
+                    self.cmd.commit("--allow-empty",m=msg)
                     return True
                 return False
             if allow_empty :
-                self._g.commit("--allow-empty",m=msg)
+                self.cmd.commit("--allow-empty",m=msg)
                 return True
-            self._g.commit(m=msg)
+            self.cmd.commit(m=msg)
             return True
         return False
 
     def clone(self, clone_path, host, path, repo):
-        self._g = _g = cmd.Git(clone_path)
         # path = str(path).split(os.path.abspath(os.sep))[0] # not needed
         path = os.path.normcase(os.path.normpath(path))
         path = path.replace('\\', '/')
-        _g.clone("-o" + host,
+        self.cmd.clone("-o" + host,
             "http://" + host + ':8002' + '/' + path + '/' + '.git',
             os.path.join(clone_path, repo))
+        self._updateServerInfo()
 
     def addRemote(self, remote_ip, clone_path):
         clone_path = os.path.normcase(os.path.normpath(clone_path))
         clone_path = clone_path.replace('\\', '/')
-        self._g.remote("add", remote_ip,
-                       "http://" + remote_ip + ':8002' + '/' + clone_path +
-                       '/.git')
+        self.cmd.remote("add", remote_ip,
+                       "http://" + remote_ip + ':8002' + '/' + clone_path
+                       + '/.git' # FIXME: needed ?
+        )
 
     def pull(self, host):
         try:
-            self._g.pull(host)
+            self.cmd.pull(host, 'master')
         except GitCommandError as e:
             if 'fatal: unable to access' in str(e):
                 raise RemoteUnreachableException(cause=e)
@@ -121,7 +125,7 @@ class Git(object):
         return self.repo.git_dir
 
 class GitWrapperException(Exception):
-    def __init__(self, message='Exception in git operation.', cause=None):
+    def __init__(self, message='Exception in git operation', cause=None):
         # http://stackoverflow.com/a/16414892/281545
         super(GitWrapperException, self).__init__(
             message + u', caused by ' + str(cause))
