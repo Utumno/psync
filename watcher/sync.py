@@ -2,9 +2,10 @@
 import datetime
 import shlex
 import os, sys
-import threading
+import threading, time
 from os.path import expanduser
 # watchdog
+from git import InvalidGitRepositoryError
 from watchdog.observers import Observer
 # internal imports
 from gitter.git_api_wrapper import RemoteUnreachableException
@@ -251,25 +252,26 @@ class Sync(Log):
                 return
         cls.ci(
             "Request to %s for %s accepted - path: %s" % (_from, repo, path))
-        git = git_api_wrapper.Git(Sync.app_path)
         clone_path = os.path.join(Sync.app_path, repo)
+
         if not os.path.exists(clone_path):
             Log.ci("Creating directory %s" % clone_path)
             os.makedirs(clone_path)
         if not os.path.isdir(clone_path):
             Log.cw("%s is not a directory" % clone_path)
             return
+        git = git_api_wrapper.Git(clone_path)
+        repoid = uniqueid.Uuid.readId(clone_path)
+        print repoid
+        if repoid == repo:
+            Log.ci("Repository %s is already cloned." % repo)
+        elif repo:
+            Log.cw("Trying to clone %s into %s " % (repo, repoid))
+            return
         else:
-            repoid = uniqueid.Uuid.readId(clone_path)
-            print repoid
-            if repoid == repo:
-                Log.ci("Repository %s is already cloned." % repo)
-            elif repoid:
-                Log.cw("Trying to clone %s into %s " % (repo, repoid))
-                return
-            else:
-                git.clone(Sync.app_path, _from[0], path, repo)
+            git.clone(Sync.app_path, _from[0], path, repo)
         # just add the observer (and add to _watches) - clone is _asynchronous_
+        time.sleep(5) # FIXME: is clone really asynchronous ?
         cls._addObserver(clone_path, git, repoid)
         cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
         with Sync._lock_pull_repos:

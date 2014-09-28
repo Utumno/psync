@@ -124,11 +124,11 @@ class GitWrapperException(Exception):
     def __init__(self, message='Exception in git operation.', cause=None):
         # http://stackoverflow.com/a/16414892/281545
         super(GitWrapperException, self).__init__(
-            message + u', caused by ' + repr(cause))
+            message + u', caused by ' + str(cause))
         self.cause = cause
 
 class RemoteUnreachableException(GitWrapperException):
     def __init__(self, message='Unable to reach remote', cause=None):
         super(RemoteUnreachableException, self).__init__(
-            message + u', error:' + repr(cause))
+            message + u', error:' + str(cause))
         self.cause = cause
