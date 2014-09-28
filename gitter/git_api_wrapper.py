@@ -112,7 +112,9 @@ class Git(object):
 
     def pull(self, host):
         try:
-            self.cmd.pull(host, 'master')
+            self.cmd.pull(host, 'master',
+                          # '--dry-run'
+            )
         except GitCommandError as e:
             if 'fatal: unable to access' in str(e):
                 raise RemoteUnreachableException(cause=e)
