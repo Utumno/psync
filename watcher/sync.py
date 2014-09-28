@@ -118,13 +118,13 @@ class Sync(Log):
                 self.__class__.sync_client.join()
 
     @classmethod
-    def _addObserver(cls, abspath, git, path, repoid):
+    def _addObserver(cls, abspath, git, repoid):
         # Observer setup
         ignored = git.getIgnoredPaths() # cls.cd(ignored)
         ignored.append(".*\.git.*")
         event_handler = TestEventHandler(git, ignore_regexes=ignored)
         observer = Observer()
-        observer.schedule(event_handler, path, recursive=True)
+        observer.schedule(event_handler, abspath, recursive=True)
         observer.start()
         Sync._observers.append(observer)
         Sync._watches[repoid] = (abspath, git)
@@ -148,23 +148,23 @@ class Sync(Log):
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
         if not git:
-            git = git_api_wrapper.Git(path, ignored_files=ignored_files)
+            git = git_api_wrapper.Git(abspath, ignored_files=ignored_files)
         was_git = git.init()
-        repoid = uniqueid.Uuid.readId(path)
+        repoid = uniqueid.Uuid.readId(abspath)
         if was_git:
             # TODO allow git repos - VERY difficult
             if not repoid:
                 # FIXME : go to the root of repository to check if .sync exists
                 # use rev-parse --show-toplevel
-                cls.cw("%s is already a git repo but not a sync one" % path)
+                cls.cw("%s is already a git repo but not a sync one" % abspath)
                 return
             git.commitAll(msg=Sync._now() + ':batch committing changes')
         else:
             # TODO: name the dir .sync instead of .git
-            cls.ci('Creating git repo at %s', path)
-            repoid = uniqueid.Uuid.create(path)
+            cls.ci('Creating git repo at %s', abspath)
+            repoid = uniqueid.Uuid.create(abspath)
             git.commitAll(msg="Initializing:"+ repoid, allow_empty=True)
-        cls._addObserver(abspath, git, path, repoid)
+        cls._addObserver(abspath, git, repoid)
 
     @staticmethod
     def _now():
@@ -256,7 +256,7 @@ class Sync(Log):
         if not os.path.exists(clone_path):
             Log.ci("Creating directory %s" % clone_path)
             os.makedirs(clone_path)
-        elif not os.path.isdir(clone_path):
+        if not os.path.isdir(clone_path):
             Log.cw("%s is not a directory" % clone_path)
             return
         else:
@@ -270,7 +270,7 @@ class Sync(Log):
             else:
                 git.clone(Sync.app_path, _from[0], path, repo)
         # just add the observer (and add to _watches) - clone is _asynchronous_
-        cls._addObserver(clone_path, git=git)
+        cls._addObserver(clone_path, git, repoid)
         cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
         with Sync._lock_pull_repos:
             old_reqs = Sync._pull_repos.get(_from[0], set())
