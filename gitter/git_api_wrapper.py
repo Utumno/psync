@@ -9,11 +9,12 @@ class Git(object):
         # TODO: be able to exclude files that were not initially excluded
         # TODO: filter duplicate paths/subpaths
 
-        def __init__(self, ignored_files, repo, append=False):
+        def __init__(self, ignored_files=None, repo=None, append=False):
             # path to the .git/info/exclude file
             self._exclude = exclude = os.path.join(repo.git_dir, "info",
                                                    "exclude")
-            logging.debug("Exclude file: %s", exclude)
+            Log.cd("Exclude file: %s", exclude)
+            if not ignored_files: return
             mode = 'ab' if append else 'wb'  # 'w' will truncate - 'b' for
             # unix newlines
             with open(exclude, mode) as excl:
@@ -37,16 +38,28 @@ class Git(object):
         dir_ = self._dir
         ignored_files = self.ignored_files
         try:  # http://stackoverflow.com/a/23666860/281545
-            self.repo = repo = Repo(dir_)
             self._g = cmd.Git(dir_)
-            self._excluder = self._Excluder(ignored_files, repo, append=True)
+            self._excluder = Git._Excluder(ignored_files, self.repo,
+                                           append=True)
             return True
         except InvalidGitRepositoryError:
             self._g = _g = cmd.Git(dir_)
             _g.init()
-            self.repo = repo = Repo(dir_)
-            self._excluder = self._Excluder(ignored_files, repo)
+            self._excluder = Git._Excluder(ignored_files, self.repo)
         return False
+
+    def get_excluder(self):
+        if not hasattr(self, '_excluder'):
+            self._excluder = self._Excluder(repo=self.repo)
+        return self._excluder
+
+    def get_repo(self):
+        if not hasattr(self, '_repo'):
+            self._repo = Repo(self._dir)
+        return self._repo
+
+    excluder = property(get_excluder)
+    repo = property(get_repo)
 
     def __init__(self, dir_, ignored_files=None):
         if not os.path.isdir(dir_): raise RuntimeError(
@@ -102,7 +115,7 @@ class Git(object):
             raise GitWrapperException(cause=e)
 
     def getIgnoredPaths(self):
-        return self._excluder.getIgnoredPaths()
+        return self.excluder.getIgnoredPaths()
 
     def dir(self):
         return self.repo.git_dir
