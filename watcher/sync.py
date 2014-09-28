@@ -118,6 +118,18 @@ class Sync(Log):
                 self.__class__.sync_client.join()
 
     @classmethod
+    def _addObserver(cls, abspath, git, path, repoid):
+        # Observer setup
+        ignored = git.getIgnoredPaths() # cls.cd(ignored)
+        ignored.append(".*\.git.*")
+        event_handler = TestEventHandler(git, ignore_regexes=ignored)
+        observer = Observer()
+        observer.schedule(event_handler, path, recursive=True)
+        observer.start()
+        Sync._observers.append(observer)
+        Sync._watches[repoid] = (abspath, git)
+
+    @classmethod
     def addObserver(cls, path='../../sandbox', ignored_files=("lol/*",), git=None):
         abspath = os.path.abspath(path)
         cls.cd("User given path: %s -> %s" % (path, abspath))
@@ -152,16 +164,7 @@ class Sync(Log):
             cls.ci('Creating git repo at %s', path)
             repoid = uniqueid.Uuid.create(path)
             git.commitAll(msg="Initializing:"+ repoid, allow_empty=True)
-        # Observer setup
-        ignored = git.getIgnoredPaths()
-        # cls.cd(ignored)
-        ignored.append(".*\.git.*")
-        event_handler = TestEventHandler(git, ignore_regexes=ignored)
-        observer = Observer()
-        observer.schedule(event_handler, path, recursive=True)
-        observer.start()
-        Sync._observers.append(observer)
-        Sync._watches[repoid] = (abspath, git)
+        cls._addObserver(abspath, git, path, repoid)
 
     @staticmethod
     def _now():
@@ -258,6 +261,7 @@ class Sync(Log):
             return
         else:
             repoid = uniqueid.Uuid.readId(clone_path)
+            print repoid
             if repoid == repo:
                 Log.ci("Repository %s is already cloned." % repo)
             elif repoid:
@@ -265,7 +269,8 @@ class Sync(Log):
                 return
             else:
                 git.clone(Sync.app_path, _from[0], path, repo)
-        cls.addObserver(clone_path) # FIXME: I should pass git as a parameter
+        # just add the observer (and add to _watches) - clone is _asynchronous_
+        cls._addObserver(clone_path, git=git)
         cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
         with Sync._lock_pull_repos:
             old_reqs = Sync._pull_repos.get(_from[0], set())
