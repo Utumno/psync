@@ -247,8 +247,22 @@ class Sync(Log):
         cls.ci(
             "Request to %s for %s accepted - path: %s" % (_from, repo, path))
         git = git_api_wrapper.Git(Sync.app_path)
-        git.clone(Sync.app_path, _from[0], path, repo)
         clone_path = os.path.join(Sync.app_path, repo)
+        if not os.path.exists(clone_path):
+            Log.ci("Creating directory %s" % clone_path)
+            os.makedirs(clone_path)
+        elif not os.path.isdir(clone_path):
+            Log.cw("%s is not a directory" % clone_path)
+            return
+        else:
+            repoid = uniqueid.Uuid.readId(clone_path)
+            if repoid == repo:
+                Log.ci("Repository %s is already cloned." % repo)
+            elif repoid:
+                Log.cw("Trying to clone %s into %s " % (repo, repoid))
+                return
+            else:
+                git.clone(Sync.app_path, _from[0], path, repo)
         cls.addObserver(clone_path) # FIXME: I should pass git as a parameter
         cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
         old_reqs = Sync._pull_repos.get(_from[0], set())
@@ -275,7 +289,10 @@ class Sync(Log):
                 cls.cw("%s cloned repo %s which is not watched." % ( _from[0],
                     repo))
                 return
-            git.addRemote(_from[0], clone_path)
+            try:
+                git.addRemote(_from[0], clone_path)
+            except:
+                pass # FIXME: stale remote ?
             old_reqs = Sync._pull_repos.get(_from[0], set())
             Sync._pull_repos[_from[0]] = old_reqs | {(repo, clone_path)}
 

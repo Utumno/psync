@@ -78,11 +78,6 @@ class Git(object):
         return False
 
     def clone(self, clone_path, host, path, repo):
-        if not os.path.exists(clone_path):
-            Log.ci("Creating directory %s" % clone_path)
-            os.makedirs(clone_path)
-        elif not os.path.isdir(clone_path):
-            Log.cw("%s is not a directory" % clone_path)
         self._g = _g = cmd.Git(clone_path)
         # path = str(path).split(os.path.abspath(os.sep))[0] # not needed
         path = os.path.normcase(os.path.normpath(path))
