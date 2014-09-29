@@ -8,8 +8,9 @@ from watcher.sync import Sync
 
 _BROADCAST = 0
 _TCP = 1
+_UDP = 2
 
-BROADCAST_INTERVAL = PULL_INTERVAL = TIMEOUT = 5 # TODO
+BROADCAST_INTERVAL = PULL_INTERVAL = TIMEOUT = 15 # TODO
 PORT = 8001
 
 class _BaseClient(threading.Thread,Log):
@@ -30,6 +31,8 @@ class _BaseClient(threading.Thread,Log):
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 # SOL_SOCKET is needed for SO_BROADCAST
                 self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            elif socket_type is _UDP:
+                self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             else:
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((tcp_host, port))
@@ -89,7 +92,7 @@ class SyncClient(_BaseClient):
     """Dispatches messages to the Discovery server."""
 
     def __init__(self):
-        super(SyncClient, self).__init__(socket_type=_BROADCAST)
+        super(SyncClient, self).__init__(socket_type=_UDP)
         self._queue = Queue()
         self.interrupted = False
 
