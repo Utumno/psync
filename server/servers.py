@@ -1,3 +1,4 @@
+import BaseHTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 import SocketServer
 import os
@@ -59,13 +60,17 @@ class HttpServer(Log,threading.Thread):
     # Thread's superclass does not call super.init() so I had to put Log First
     PORT = 8002
 
+    class _ThreadingSimpleServer(SocketServer.ThreadingMixIn,
+                                BaseHTTPServer.HTTPServer):
+        """https://github.com/Nakiami/MultithreadedSimpleHTTPServer"""
+
     def __init__(self):
         super(HttpServer, self).__init__(name=self.__class__.__name__,
                                          target=self._task)
         self.host = socket.gethostbyname(socket.gethostname())
         # cwd = os.getcwd()
         os.chdir(os.path.abspath(os.sep))
-        self.server = SocketServer.TCPServer((self.host, self.PORT),
+        self.server = HttpServer._ThreadingSimpleServer((self.host, self.PORT),
                                              SimpleHTTPRequestHandler)
         # os.chdir(cwd) # TODO: serve only repositories
 
