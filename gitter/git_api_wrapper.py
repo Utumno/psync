@@ -136,6 +136,8 @@ class Git(object):
         except GitCommandError as e:
             if 'fatal: unable to access' in str(e):
                 raise RemoteUnreachableException(cause=e)
+            if 'not found' in str(e):
+                raise RemoteNotFoundException(cause=e)
             raise GitWrapperException(cause=e)
 
     def getIgnoredPaths(self):
@@ -154,6 +156,12 @@ class GitWrapperException(Exception):
 class RemoteUnreachableException(GitWrapperException):
     def __init__(self, message='Unable to reach remote', cause=None):
         super(RemoteUnreachableException, self).__init__(
+            message + u', error:' + str(cause))
+        self.cause = cause
+
+class RemoteNotFoundException(GitWrapperException):
+    def __init__(self, message='Remote not found', cause=None):
+        super(RemoteNotFoundException, self).__init__(
             message + u', error:' + str(cause))
         self.cause = cause
 

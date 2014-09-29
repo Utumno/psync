@@ -8,7 +8,7 @@ from os.path import expanduser
 from watchdog.observers import Observer
 # internal imports
 from gitter.git_api_wrapper import RemoteUnreachableException, \
-    RemoteExistsException
+    RemoteExistsException, RemoteNotFoundException
 from log import Log
 import server as sr
 from server import uniqueid
@@ -182,6 +182,7 @@ class Sync(Log):
 
     @staticmethod
     def newPeer(_from, uuids):
+        _from = _from[0]
         with Sync._lock_peers:
             try:
                 old_uuids = Sync._peers[_from][0]
@@ -325,18 +326,25 @@ class Sync(Log):
             pull_clients = watch[2]
             if not host in pull_clients:
                 cls.cw('Received pull message for %s from %s which we do not '
-                       'have in our pull clients.' % (host, repo))
+                       'have in our pull clients.' % (repo, host))
                 return
             git = watch[1]
             try:
                 git.fetch(host)
             except RemoteUnreachableException:
-                cls.cw("Remote unreachable - removing.")
+                cls.cw("Remote %s unreachable - removing." % host)
                 cls.removePeer(host)
+            except RemoteNotFoundException:
+                cls.cw("Repo %s not found on peer %s - removing remote." % (
+                    repo, host))
+                for client in watch[2]:
+                    if client == host:
+                        watch[2].remove(host)
+                        watch[1].removeRemote(host)
 
     @classmethod
     def removePeer(cls, p):
-        cls.ci("Peer %s appears dead - removing." % p)
+        cls.ci("Peer %s appears dead - removing." % (p,))
         with cls._lock_peers, cls._lock_watches:
             del cls._peers[p]
             for repo, watch in cls._watches.items():
