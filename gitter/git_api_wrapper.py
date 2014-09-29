@@ -95,7 +95,7 @@ class Git(object):
 
     def clone(self, clone_path, host, path, repo):
         # path = str(path).split(os.path.abspath(os.sep))[0] # not needed
-        path = os.path.normcase(os.path.normpath(path))
+        path = os.path.normcase(os.path.normpath(path)) # FIXME: remote unix machine
         path = path.replace('\\', '/')
         self.cmd.clone("-o" + host,
             "http://" + host + ':8002' + '/' + path + '/' + '.git',
@@ -105,10 +105,15 @@ class Git(object):
     def addRemote(self, remote_ip, clone_path):
         clone_path = os.path.normcase(os.path.normpath(clone_path))
         clone_path = clone_path.replace('\\', '/')
-        self.cmd.remote("add", remote_ip,
-                       "http://" + remote_ip + ':8002' + '/' + clone_path
-                       + '/.git' # FIXME: needed ?
-        )
+        try:
+            self.cmd.remote("add", remote_ip,
+                           "http://" + remote_ip + ':8002' + '/' + clone_path
+                           + '/.git' # FIXME: needed ?
+            )
+        except GitCommandError as e:
+            if 'already exists' in str(e):
+                raise RemoteExistsException(cause=e)
+            raise GitWrapperException(cause=e)
 
     def pull(self, host):
         try:
@@ -136,5 +141,11 @@ class GitWrapperException(Exception):
 class RemoteUnreachableException(GitWrapperException):
     def __init__(self, message='Unable to reach remote', cause=None):
         super(RemoteUnreachableException, self).__init__(
+            message + u', error:' + str(cause))
+        self.cause = cause
+
+class RemoteExistsException(GitWrapperException):
+    def __init__(self, message='Remote exists', cause=None):
+        super(RemoteExistsException, self).__init__(
             message + u', error:' + str(cause))
         self.cause = cause

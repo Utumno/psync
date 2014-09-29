@@ -8,7 +8,8 @@ from os.path import expanduser
 from git import InvalidGitRepositoryError
 from watchdog.observers import Observer
 # internal imports
-from gitter.git_api_wrapper import RemoteUnreachableException
+from gitter.git_api_wrapper import RemoteUnreachableException, \
+    RemoteExistsException
 from log import Log
 import server as sr
 from server import uniqueid
@@ -262,9 +263,13 @@ class Sync(Log):
             return
         git = git_api_wrapper.Git(clone_path)
         repoid = uniqueid.Uuid.readId(clone_path)
-        print repoid
+        # print repoid
         if repoid == repo:
-            Log.ci("Repository %s is already cloned." % repo)
+            Log.ci("Repository %s is already cloned. Adding remote." % repo)
+            try:
+                git.addRemote(_from[0], path)
+            except RemoteExistsException:
+                cls.cw("Trying to readd a remote")
         elif repoid:
             Log.cw("Trying to clone %s into %s " % (repo, repoid))
             return
@@ -273,12 +278,12 @@ class Sync(Log):
         # just add the observer (and add to _watches) - clone is _asynchronous_
         time.sleep(5) # FIXME: is clone really asynchronous ?
         cls._addObserver(clone_path, git, repo)
-        cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
         with Sync._lock_pull_repos:
             old_reqs = Sync._pull_repos.get(_from[0], set())
             Sync._pull_repos[_from[0]] = old_reqs | {(repo,path)}
             print Sync._pull_repos
             print Sync._watches
+        cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
 
     @classmethod
     def pullAll(cls):

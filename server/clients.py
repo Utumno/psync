@@ -75,13 +75,13 @@ class DiscoveryClient(_BaseClient):
                 Sync.pullAll()
             except:
                 self.e('Error pulling.')
-            try:
-                c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
-                if addr[0] != self.host:
-                    self.d( "The server's response is " + c)
-                    self.i('New peer')
-            except socket.timeout: self.d("Broadcast timed out")
-            except: self.e("Broadcast failed")
+            # try:
+            #     c, addr = self.s.recvfrom(_RECEIVE_BUFFER)
+            #     if addr[0] != self.host:
+            #         self.d( "The server's response is " + c)
+            #         self.i('New peer')
+            # except socket.timeout: self.d("Broadcast timed out")
+            # except: self.e("Broadcast failed")
             sleep(self.broadcast_interval)
         self.i("Stopping Discovery client at: %s:%s", self.host, self.port)
 
