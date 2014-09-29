@@ -251,7 +251,6 @@ class Sync(Log):
         cls.ci(
             "Request to %s for %s accepted - path: %s" % (_from, repo, path))
         clone_path = os.path.join(Sync.app_path, repo)
-
         if not os.path.exists(clone_path):
             Log.ci("Creating directory %s" % clone_path)
             os.makedirs(clone_path)
@@ -324,7 +323,7 @@ class Sync(Log):
                 return
             git = watch[1]
             try:
-                git.pull(host)
+                git.fetch(host)
             except RemoteUnreachableException: # FIXME remove the repo
                 cls.cw("Remote unreachable.")
 

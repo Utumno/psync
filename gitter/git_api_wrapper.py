@@ -115,9 +115,9 @@ class Git(object):
                 raise RemoteExistsException(cause=e)
             raise GitWrapperException(cause=e)
 
-    def pull(self, host):
+    def fetch(self, host):
         try:
-            self.cmd.pull(host, 'master',
+            self.cmd.fetch(host, 'master',
                           # '--dry-run'
             )
         except GitCommandError as e:
