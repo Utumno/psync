@@ -28,6 +28,8 @@ class Sync(Log):
     _observers = []
     # _Tree classes that keep info on directory trees being watched
     _watches = {}
+    # Peers
+    SECONDS_BEFORE_REMOVAL = 30
     _peers = {}
     # requests made to the server (us)
     _requests_pending = {}
@@ -171,6 +173,10 @@ class Sync(Log):
 
     @staticmethod
     def broadcastMsg():
+        with Sync._lock_peers:
+            for p, p_info in Sync._peers.items():
+                if  int(time.time()) - p_info[1] > Sync.SECONDS_BEFORE_REMOVAL:
+                    Sync.removePeer(p)
         with Sync._lock_watches:
             return DiscoveryMSG(Sync._watches.keys())
 
@@ -178,10 +184,10 @@ class Sync(Log):
     def newPeer(_from, uuids):
         with Sync._lock_peers:
             try:
-                old_uuids = Sync._peers[_from]
+                old_uuids = Sync._peers[_from][0]
             except KeyError:
                 old_uuids = None
-            Sync._peers[_from] = uuids
+            Sync._peers[_from] = (uuids, int(time.time()))
             if old_uuids is None:
                 msg = "New peer %s."
             elif old_uuids != uuids:
@@ -272,7 +278,7 @@ class Sync(Log):
         else:
             git.clone(Sync.app_path, _from[0], path, repo)
         # just add the observer (and add to _watches) - clone is _asynchronous_
-        time.sleep(5) # FIXME: is clone really asynchronous ?
+        # time.sleep(5) # FIXME: is clone really synchronous ?
         cls._addObserver(clone_path, git, repo)
         with Sync._lock_watches:
             pull_clients = Sync._watches[repo][2]
@@ -324,8 +330,20 @@ class Sync(Log):
             git = watch[1]
             try:
                 git.fetch(host)
-            except RemoteUnreachableException: # FIXME remove the repo
-                cls.cw("Remote unreachable.")
+            except RemoteUnreachableException:
+                cls.cw("Remote unreachable - removing.")
+                cls.removePeer(host)
+
+    @classmethod
+    def removePeer(cls, p):
+        cls.ci("Peer %s appears dead - removing." % p)
+        with cls._lock_peers, cls._lock_watches:
+            del cls._peers[p]
+            for repo, watch in cls._watches.items():
+                for client in watch[2]:
+                    if client == p:
+                        watch[2].remove(p)
+                        watch[1].removeRemote(p)
 
 if __name__ == "__main__":
     from watcher.sync import Sync

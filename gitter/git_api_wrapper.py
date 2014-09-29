@@ -93,24 +93,37 @@ class Git(object):
             return True
         return False
 
-    def clone(self, clone_path, host, path, repo):
+    @staticmethod
+    def _normalizePath(path):
         # path = str(path).split(os.path.abspath(os.sep))[0] # not needed
-        path = os.path.normcase(os.path.normpath(path)) # FIXME: remote unix machine
+        path = os.path.normpath(path)
         path = path.replace('\\', '/')
+        return path
+
+    def clone(self, clone_path, host, path, repo):
+        path = self._normalizePath(path)
         self.cmd.clone("-o" + host,
             "http://" + host + ':8002' + '/' + path + '/' + '.git',
             os.path.join(clone_path, repo))
         self._updateServerInfo()
 
     def addRemote(self, remote_ip, clone_path):
-        clone_path = os.path.normcase(os.path.normpath(clone_path))
-        clone_path = clone_path.replace('\\', '/')
+        clone_path = self._normalizePath(clone_path)
         try:
             self.cmd.remote("add", remote_ip,
                            "http://" + remote_ip + ':8002' + '/' + clone_path
                            + '/.git' # FIXME: needed ?
             )
         except GitCommandError as e:
+            if 'already exists' in str(e):
+                raise RemoteExistsException(cause=e)
+            raise GitWrapperException(cause=e)
+
+    def removeRemote(self, remote):
+        try:
+            self.repo.delete_remote(remote)
+        except GitCommandError as e:
+            # FIXME
             if 'already exists' in str(e):
                 raise RemoteExistsException(cause=e)
             raise GitWrapperException(cause=e)
