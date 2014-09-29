@@ -25,6 +25,8 @@ class Message(object):
             return AcceptRequestMSG(fields[1], fields[2], _from)
         elif fields[0] == LABEL + 'CLONE_SUCCESS':
             return CloneSucceededMSG(fields[1], fields[2], _from)
+        elif fields[0] == LABEL + 'PULL':
+            return PullMSG(fields[1], _from)
         else:
             raise UnknownMessageException
 
@@ -90,3 +92,18 @@ class CloneSucceededMSG(Message):
     def handle(self):
         if not self._from: raise RuntimeError("Sender unfilled.")
         watcher.sync.Sync.cloneSucceeded(self._from, self.repo, self.clonePath)
+
+class PullMSG(Message):
+    """Server message to notify clients to pull from a repo."""
+
+    def __init__(self, repo, _from=None):
+        super(PullMSG, self).__init__(_from)
+        self.label = LABEL + 'PULL'
+        self.repo = repo
+
+    def serialize(self):
+        return FIELD_SEPARATOR.join((self.label, self.repo))
+
+    def handle(self):
+        if not self._from: raise RuntimeError("Sender unfilled.")
+        watcher.sync.Sync.initiatePull(self._from, self.repo)

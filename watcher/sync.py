@@ -5,7 +5,6 @@ import os, sys
 import threading, time
 from os.path import expanduser
 # watchdog
-from git import InvalidGitRepositoryError
 from watchdog.observers import Observer
 # internal imports
 from gitter.git_api_wrapper import RemoteUnreachableException, \
@@ -17,7 +16,7 @@ from watcher.cli import Parser
 from gitter import git_api_wrapper
 from watcher.event_handler import TestEventHandler
 from watcher.messages import DiscoveryMSG, RequestMSG, AcceptRequestMSG, \
-    CloneSucceededMSG
+    CloneSucceededMSG, PullMSG
 
 VERSION = 0.1
 
@@ -35,7 +34,6 @@ class Sync(Log):
     _requests_accepted = {}
     # request made to the remote server
     _requests_made = {}
-    _pull_repos = {}
     # Locks
     _lock_observers = threading.RLock()
     _lock_watches = threading.RLock() # use this for observers too
@@ -43,7 +41,6 @@ class Sync(Log):
     _lock_requests_pending = threading.RLock()
     _lock_requests_made = threading.RLock()
     _lock_requests_accepted = threading.RLock()
-    _lock_pull_repos = threading.RLock()
     sync_client = None
     # http://stackoverflow.com/a/4028943/281545
     home = expanduser("~")
@@ -129,7 +126,7 @@ class Sync(Log):
         observer.schedule(event_handler, abspath, recursive=True)
         observer.start()
         Sync._observers.append(observer)
-        Sync._watches[repoid] = (abspath, git)
+        Sync._watches[repoid] = (abspath, git, [])
 
     @classmethod
     def addObserver(cls, path='../../sandbox', ignored_files=("lol/*",), git=None):
@@ -269,7 +266,7 @@ class Sync(Log):
             try:
                 git.addRemote(_from[0], path)
             except RemoteExistsException:
-                cls.cw("Trying to readd a remote")
+                cls.cw("Trying to re-add a remote")
         elif repoid:
             Log.cw("Trying to clone %s into %s " % (repo, repoid))
             return
@@ -278,31 +275,24 @@ class Sync(Log):
         # just add the observer (and add to _watches) - clone is _asynchronous_
         time.sleep(5) # FIXME: is clone really asynchronous ?
         cls._addObserver(clone_path, git, repo)
-        with Sync._lock_pull_repos:
-            old_reqs = Sync._pull_repos.get(_from[0], set())
-            Sync._pull_repos[_from[0]] = old_reqs | {(repo,path)}
-            print Sync._pull_repos
+        with Sync._lock_watches:
+            pull_clients = Sync._watches[repo][2]
+            pull_clients.append(_from[0])
             print Sync._watches
         cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
 
     @classmethod
     def pullAll(cls):
-        # with Sync._lock_pull_repos, Sync._lock_watches: # FIXME read write locks !
-            for host, repo_info in cls._pull_repos.items():
-                for reps in repo_info:
-                    repo = reps[0]
-                    remote_path = reps[1]
-                    git = Sync._watches[repo][1]
-                    try:
-                        git.pull(host)
-                    except RemoteUnreachableException:
-                        cls.cw("Remote unreachable.")
-                    # How are pulls from multiple machines handled? Need to send
-                    # msg to temporarily stop the service(BroadCast or Send)
+        with Sync._lock_watches: # FIXME read write locks !
+            for repo, watch in cls._watches.items():
+                for client in watch[2]:
+                    cls.sync_client.add((PullMSG(repo), client))
+                # How are pulls from multiple machines handled? Need to send
+                # msg to temporarily stop the service(BroadCast or Send)
 
     @classmethod
     def cloneSucceeded(cls, _from, repo, clone_path):
-        with cls._lock_pull_repos, cls._lock_watches:
+        with cls._lock_watches:
             try:
                 git = cls._watches[repo][1]
             except KeyError:
@@ -311,10 +301,30 @@ class Sync(Log):
                 return
             try:
                 git.addRemote(_from[0], clone_path)
-            except:
-                pass # FIXME: stale remote ?
-            old_reqs = Sync._pull_repos.get(_from[0], set())
-            Sync._pull_repos[_from[0]] = old_reqs | {(repo, clone_path)}
+            except RemoteExistsException:
+                cls.cw("Trying to re-add a remote") # FIXME: stale remote ?
+            pull_clients = cls._watches[repo][2]
+            pull_clients.append(_from[0])
+
+    @classmethod
+    def initiatePull(cls, _from, repo):
+        host = _from[0]
+        with cls._lock_watches:
+            watch = cls._watches.get(repo, None)
+            if not watch:
+                cls.cw('Received pull message from %s for %s which we do not '
+                       'watch.' % (host, repo))
+                return
+            pull_clients = watch[2]
+            if not host in pull_clients:
+                cls.cw('Received pull message for %s from %s which we do not '
+                       'have in our pull clients.' % (host, repo))
+                return
+            git = watch[1]
+            try:
+                git.pull(host)
+            except RemoteUnreachableException: # FIXME remove the repo
+                cls.cw("Remote unreachable.")
 
 if __name__ == "__main__":
     from watcher.sync import Sync
