@@ -8,7 +8,7 @@ from os.path import expanduser
 from watchdog.observers import Observer
 # internal imports
 from gitter.git_api_wrapper import RemoteUnreachableException, \
-    RemoteExistsException, RemoteNotFoundException
+    RemoteExistsException, RemoteNotFoundException, GitWrapperException
 from log import Log
 import server as sr
 from server import uniqueid
@@ -334,6 +334,7 @@ class Sync(Log):
             except RemoteUnreachableException:
                 cls.cw("Remote %s unreachable - removing." % host)
                 cls.removePeer(host)
+                return
             except RemoteNotFoundException:
                 cls.cw("Repo %s not found on peer %s - removing remote." % (
                     repo, host))
@@ -341,6 +342,11 @@ class Sync(Log):
                     if client == host:
                         watch[2].remove(host)
                         watch[1].removeRemote(host)
+                return
+            try:
+                git.merge(host)
+            except GitWrapperException:
+                cls.ce('Automatic merge failed - please merge manually.')
 
     @classmethod
     def removePeer(cls, p):

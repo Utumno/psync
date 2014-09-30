@@ -1,6 +1,7 @@
 import fnmatch
 import logging
 import os
+import threading
 from  git import Repo, InvalidGitRepositoryError, cmd, exc, GitCommandError
 from log import Log
 
@@ -69,10 +70,12 @@ class Git(object):
             "%s is not a directory" % dir_)
         self._dir = dir_
         self.ignored_files = ignored_files
+        self._merge_lock = threading.RLock()
 
     def commitAll(self, msg, allow_empty=False):
-        if self._commitAll(msg, allow_empty):
-            self._updateServerInfo()
+        with self._merge_lock:
+            if self._commitAll(msg, allow_empty):
+                self._updateServerInfo()
 
     def _commitAll(self, msg, allow_empty=False):
         dirty = self.repo.is_dirty(untracked_files=True) # GitPython > 0.3.2rc1
@@ -139,6 +142,13 @@ class Git(object):
             if 'not found' in str(e):
                 raise RemoteNotFoundException(cause=e)
             raise GitWrapperException(cause=e)
+
+    def merge(self, host):
+        with self._merge_lock:
+            try:
+                self.cmd.merge(host + '/master')
+            except GitCommandError as e:
+                raise GitWrapperException(cause=e)
 
     def getIgnoredPaths(self):
         return self.excluder.getIgnoredPaths()
