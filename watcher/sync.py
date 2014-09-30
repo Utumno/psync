@@ -330,7 +330,7 @@ class Sync(Log):
                 return
             git = watch[1]
             try:
-                git.fetch(host)
+                info_list = git.fetch(host)
             except RemoteUnreachableException:
                 cls.cw("Remote %s unreachable - removing." % host)
                 cls.removePeer(host)
@@ -344,7 +344,8 @@ class Sync(Log):
                         watch[1].removeRemote(host)
                 return
             try:
-                git.merge(host)
+                info = info_list[0]
+                git.merge(info)
             except GitWrapperException:
                 cls.ce('Automatic merge failed - please merge manually.')
 

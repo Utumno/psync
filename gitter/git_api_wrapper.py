@@ -71,6 +71,7 @@ class Git(object):
         self._dir = dir_
         self.ignored_files = ignored_files
         self._merge_lock = threading.RLock()
+        self.remotes = {}
 
     def commitAll(self, msg, allow_empty=False):
         with self._merge_lock:
@@ -113,29 +114,32 @@ class Git(object):
     def addRemote(self, remote_ip, clone_path):
         clone_path = self._normalizePath(clone_path)
         try:
-            self.cmd.remote("add", remote_ip,
+            self.remotes[remote_ip] = self.repo.create_remote(remote_ip,
                            "http://" + remote_ip + ':8002' + '/' + clone_path
                            + '/.git' # FIXME: needed ?
             )
         except GitCommandError as e:
             if 'already exists' in str(e):
+                for r in self.repo.remotes:
+                    if r.name == remote_ip:
+                        self.remotes[remote_ip] = r
+                        break
                 raise RemoteExistsException(cause=e)
             raise GitWrapperException(cause=e)
 
     def removeRemote(self, remote):
         try:
             self.repo.delete_remote(remote)
+            del self.remotes[remote]
         except GitCommandError as e:
-            # FIXME
+            # FIXME "not exists"
             if 'already exists' in str(e):
                 raise RemoteExistsException(cause=e)
             raise GitWrapperException(cause=e)
 
     def fetch(self, host):
         try:
-            self.cmd.fetch(host, 'master',
-                          # '--dry-run'
-            )
+            return self.remotes[host].fetch()
         except GitCommandError as e:
             if 'fatal: unable to access' in str(e):
                 raise RemoteUnreachableException(cause=e)
@@ -143,10 +147,10 @@ class Git(object):
                 raise RemoteNotFoundException(cause=e)
             raise GitWrapperException(cause=e)
 
-    def merge(self, host):
+    def merge(self, info):
         with self._merge_lock:
             try:
-                self.cmd.merge(host + '/master')
+                self.repo.git.merge(info.commit)
             except GitCommandError as e:
                 raise GitWrapperException(cause=e)
 
