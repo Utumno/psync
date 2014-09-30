@@ -1,6 +1,7 @@
 import fnmatch
 import logging
 import os
+import subprocess
 import threading
 from  git import Repo, InvalidGitRepositoryError, cmd, exc, GitCommandError
 from log import Log
@@ -72,6 +73,31 @@ class Git(object):
         self.ignored_files = ignored_files
         self._merge_lock = threading.RLock()
         self.remotes = {}
+        def resolve_path(executable):
+            if os.path.sep in executable:
+                raise ValueError("Invalid filename: %s" % executable)
+            path = os.environ.get("PATH", "").split(os.pathsep)
+            # PATHEXTS tells us which extensions an executable may have
+            path_exts = os.environ.get("PATHEXTS", ".exe;.bat;.cmd").split(";")
+            has_ext = os.path.splitext(executable)[1] in path_exts
+            if not has_ext:
+                exts = path_exts
+            else:
+                # Don't try to append any extensions
+                exts = [""]
+            for d in path:
+                try:
+                    for ext in exts:
+                        exepath = os.path.join(d, executable + ext)
+                        if os.access(exepath, os.X_OK):
+                            return exepath
+                except OSError:
+                    pass
+            return None
+        self.git_exe = resolve_path("git")
+        print self.git_exe
+        # proc = subprocess.Popen('{0} status'.format(git))
+        # print 'result: ', proc.communicate()
 
     def commitAll(self, msg, allow_empty=False):
         with self._merge_lock:
@@ -151,10 +177,12 @@ class Git(object):
         with self._merge_lock:
             try:
                 print info.commit
-                print cmd.Git.GIT_PYTHON_GIT_EXECUTABLE
-                import subprocess
-                output = subprocess.check_output(
-                    [cmd.Git.GIT_PYTHON_GIT_EXECUTABLE, 'merge', str(info.commit)])
+                # print cmd.Git.GIT_PYTHON_GIT_EXECUTABLE
+                cwd = os.getcwd()
+                os.chdir(self._dir)
+                print subprocess.check_output(
+                    [self.git_exe, 'merge', str(info.commit)])
+                os.chdir(cwd) # TODO: serve only repositories
                 # self.repo.git.merge(info.commit)
             except GitCommandError as e:
                 raise GitWrapperException(cause=e)
