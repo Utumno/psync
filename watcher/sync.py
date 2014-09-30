@@ -331,7 +331,9 @@ class Sync(Log):
             git = watch[1]
             try:
                 info_list = git.fetch(host)
-                if not info_list: return
+                if not info_list:
+                    print 'No fetch'
+                    return
             except RemoteUnreachableException:
                 cls.cw("Remote %s unreachable - removing." % host)
                 cls.removePeer(host)

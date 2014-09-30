@@ -150,7 +150,12 @@ class Git(object):
     def merge(self, info):
         with self._merge_lock:
             try:
-                self.repo.git.merge(info.commit)
+                print info.commit
+                print cmd.Git.GIT_PYTHON_GIT_EXECUTABLE
+                import subprocess
+                output = subprocess.check_output(
+                    [cmd.Git.GIT_PYTHON_GIT_EXECUTABLE, 'merge', str(info.commit)])
+                # self.repo.git.merge(info.commit)
             except GitCommandError as e:
                 raise GitWrapperException(cause=e)
 
