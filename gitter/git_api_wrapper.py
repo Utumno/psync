@@ -179,9 +179,11 @@ class Git(object):
                 print info.commit
                 # print cmd.Git.GIT_PYTHON_GIT_EXECUTABLE
                 cwd = os.getcwd()
+                print cwd
                 os.chdir(self._dir)
-                print subprocess.check_output(
-                    [self.git_exe, 'merge', str(info.commit)])
+                print os.getcwd()
+                subprocess.Popen(
+                    [self.git_exe, 'merge', str(info.commit)], stdout=None, stderr=None)
                 os.chdir(cwd) # TODO: serve only repositories
                 # self.repo.git.merge(info.commit)
             except GitCommandError as e:
