@@ -135,6 +135,10 @@ class Git(object):
         self.cmd.clone("-o" + host,
             "http://" + host + ':8002' + '/' + path + '/' + '.git',
             os.path.join(clone_path, repo))
+        for r in self.repo.remotes:
+            if r.name == host:
+                self.remotes[host] = r
+                break
         self._updateServerInfo()
 
     def addRemote(self, remote_ip, clone_path):
