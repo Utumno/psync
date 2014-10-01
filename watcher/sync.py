@@ -74,11 +74,6 @@ class Sync(Log):
             except:
                 self.e("Failed to start Discovery client.")
             try:
-                pullservice = sr.clients.PullService()
-                pullservice.start()
-            except:
-                self.e("Failed to start the pull service.")
-            try:
                 http = sr.servers.HttpServer()
                 http.start()
             except:
@@ -117,9 +112,6 @@ class Sync(Log):
             if client:
                 client.shutdown()
                 client.join()
-            if pullservice:
-                pullservice.shutdown()
-                pullservice.join()
             if self.__class__.sync_client:
                 self.__class__.sync_client.shutdown()
                 self.__class__.sync_client.join()
