@@ -5,10 +5,13 @@ from watcher.commands.command import Command, Arg # move to __init__ ?
 from watcher.sync import Sync
 
 class Share(Command):
-    class _ShareAction(argparse.Action,Log):
+    class _ShareAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             Log.cd('%r %r %r' % (namespace, values, option_string))
+            # sync = sys.modules['__main__']  # http://stackoverflow.com/
+            # questions/13181559#comment17940192_13181615
             setattr(namespace, self.dest, values)
+            # print sync.Sync.sync_client
             Sync.newRequestClient(host=namespace.host, repo=values)
 
     CMD_NAME = 'share'

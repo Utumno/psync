@@ -2,7 +2,6 @@
 import shlex
 import os, sys
 import threading
-import time
 from watchdog.observers import Observer
 # internal imports
 from log import Log
@@ -40,10 +39,17 @@ class Sync(Log):
 
     def __init__(self):
         super(Sync, self).__init__()
-        parser = Parser(description='Monitor and sync directory changes')
+        self.__class__.sync_client = sr.clients.SyncClient()
+
+    def main(self):
         server, client, http = None, None, None
         try:
             ### Servers/Clients ###
+            try:
+                self.__class__.sync_client.start()
+                print Sync.sync_client
+            except:
+                self.e("Failed to start Sync client.")
             try:
                 server = sr.servers.DiscoveryServer()
                 server.start()
@@ -59,12 +65,8 @@ class Sync(Log):
                 http.start()
             except:
                 self.e("Failed to start HttpServer server.")
-            try:
-                self.__class__.sync_client = sr.clients.SyncClient()
-                self.__class__.sync_client.start()
-            except:
-                self.e("Failed to start Sync client.")
             ### COMMAND LOOP ###
+            parser = Parser(description='Monitor and sync directory changes')
             while True:
                 # http://stackoverflow.com/questions/230751
                 sys.stdout.flush()
@@ -157,7 +159,9 @@ class Sync(Log):
             Log.ci(msg % (_from,))
 
     @classmethod
-    def newRequestClient(cls, host, repo):
+    def newRequestClient(cls,host, repo):
+        # print cls.sync_client
+        # print Sync.sync_client
         with Sync._lock_requests_made:
             old_reqs = Sync._requests_made.get(host, set())
             Sync._requests_made[host] = old_reqs | {repo}
@@ -172,4 +176,5 @@ class Sync(Log):
         cls.ci("New request from %s for %s" % (_from[0], repo))
 
 if __name__ == "__main__":
-    Sync()
+    from watcher.sync import Sync
+    Sync().main()
