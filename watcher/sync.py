@@ -256,7 +256,7 @@ class Sync(Log):
 
     @classmethod
     def pullAll(cls):
-        with Sync._lock_pull_repos, Sync._lock_watches:
+        # with Sync._lock_pull_repos, Sync._lock_watches: # FIXME read write locks !
             for host, repo_info in cls._pull_repos.items():
                 for reps in repo_info:
                     repo = reps[0]
