@@ -7,6 +7,7 @@ from os.path import expanduser
 # watchdog
 from watchdog.observers import Observer
 # internal imports
+from gitter.git_api_wrapper import RemoteUnreachableException
 from log import Log
 import server as sr
 from server import uniqueid
@@ -270,6 +271,7 @@ class Sync(Log):
             old_reqs = Sync._pull_repos.get(_from[0], set())
             Sync._pull_repos[_from[0]] = old_reqs | {(repo,path)}
             print Sync._pull_repos
+            print Sync._watches
 
     @classmethod
     def pullAll(cls):
@@ -279,7 +281,10 @@ class Sync(Log):
                     repo = reps[0]
                     remote_path = reps[1]
                     git = Sync._watches[repo][1]
-                    git.pull(host)
+                    try:
+                        git.pull(host)
+                    except RemoteUnreachableException:
+                        cls.cw("Remote unreachable.")
                     # How are pulls from multiple machines handled? Need to send
                     # msg to temporarily stop the service(BroadCast or Send)
 

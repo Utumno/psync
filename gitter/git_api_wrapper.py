@@ -1,7 +1,7 @@
 import fnmatch
 import logging
 import os
-from  git import Repo, InvalidGitRepositoryError, cmd, exc
+from  git import Repo, InvalidGitRepositoryError, cmd, exc, GitCommandError
 from log import Log
 
 class Git(object):
@@ -94,10 +94,28 @@ class Git(object):
                        '/.git')
 
     def pull(self, host):
-        self._g.pull(host)
+        try:
+            self._g.pull(host)
+        except GitCommandError as e:
+            if 'fatal: unable to access' in str(e):
+                raise RemoteUnreachableException(cause=e)
+            raise GitWrapperException(cause=e)
 
     def getIgnoredPaths(self):
         return self._excluder.getIgnoredPaths()
 
     def dir(self):
         return self.repo.git_dir
+
+class GitWrapperException(Exception):
+    def __init__(self, message='Exception in git operation.', cause=None):
+        # http://stackoverflow.com/a/16414892/281545
+        super(GitWrapperException, self).__init__(
+            message + u', caused by ' + repr(cause))
+        self.cause = cause
+
+class RemoteUnreachableException(GitWrapperException):
+    def __init__(self, message='Unable to reach remote', cause=None):
+        super(RemoteUnreachableException, self).__init__(
+            message + u', error:' + repr(cause))
+        self.cause = cause
