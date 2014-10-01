@@ -72,8 +72,12 @@ class Sync(Log):
                 sys.stdout.flush()
                 sys.stderr.flush()
                 # http://stackoverflow.com/a/17352877/281545
-                cmd = shlex.split(raw_input('> ').strip())
-                # self.d('command line: %s', cmd)
+                try:
+                    cmd = shlex.split(raw_input('> ').strip())
+                except ValueError:
+                    self.e('malformed command')
+                    cmd = None
+                if not cmd: continue
                 try:
                     parser.parse(cmd)
                 except SystemExit:  # DUH

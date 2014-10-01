@@ -1,4 +1,5 @@
 from Queue import Queue, Empty
+from _socket import gaierror
 import socket
 import threading
 from time import sleep
@@ -94,10 +95,13 @@ class SyncClient(_BaseClient):
         self.i("Starting Sync client at: %s:%s", self.host, self.port)
         while not self.interrupted:
             try:
-                q = self._queue.get(timeout=BROADCAST_INTERVAL)
-                self.s.sendto(q[0], (q[1], PORT))
-            except Empty:
+                msg, host = self._queue.get(timeout=BROADCAST_INTERVAL)
+                self.s.sendto(msg.serialize(), (host, PORT))
+            except Empty:  # for the timeout - TODO - no timeout and special
+                # quit token
                 pass
+            except gaierror:
+                self.e(msg.label + " sending failed")
         self.i("Stopping Sync client at: %s:%s", self.host, self.port)
 
     def add(self,obj):
