@@ -117,7 +117,7 @@ class Sync(Log):
                 self.__class__.sync_client.join()
 
     @classmethod
-    def addObserver(cls, path='../../sandbox', ignored_files=("lol/*",)):
+    def addObserver(cls, path='../../sandbox', ignored_files=("lol/*",), git=None):
         abspath = os.path.abspath(path)
         cls.cd("User given path: %s -> %s" % (path, abspath))
         if not os.path.exists(abspath):
@@ -134,7 +134,8 @@ class Sync(Log):
                     path, tuple_[0]))
                 return
         # FIXME - time of check time of use - lock the dir for deletion ?
-        git = git_api_wrapper.Git(path, ignored_files=ignored_files)
+        if not git:
+            git = git_api_wrapper.Git(path, ignored_files=ignored_files)
         was_git = git.init()
         repoid = uniqueid.Uuid.readId(path)
         if was_git:
@@ -233,7 +234,7 @@ class Sync(Log):
 
     @classmethod
     def acceptedRequest(cls, _from, repo, path):
-        with Sync._lock_requests_made, Sync._lock_pull_repos:
+        with Sync._lock_requests_made:
             try:
                 old_reqs = Sync._requests_made[_from[0]]
                 if not repo in old_reqs:
@@ -265,8 +266,10 @@ class Sync(Log):
                 git.clone(Sync.app_path, _from[0], path, repo)
         cls.addObserver(clone_path) # FIXME: I should pass git as a parameter
         cls.sync_client.add((CloneSucceededMSG(repo,clone_path),_from[0]))
-        old_reqs = Sync._pull_repos.get(_from[0], set())
-        Sync._pull_repos[_from[0]] = old_reqs | {(repo,path)}
+        with Sync._lock_pull_repos:
+            old_reqs = Sync._pull_repos.get(_from[0], set())
+            Sync._pull_repos[_from[0]] = old_reqs | {(repo,path)}
+            print Sync._pull_repos
 
     @classmethod
     def pullAll(cls):
