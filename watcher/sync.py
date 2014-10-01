@@ -286,6 +286,7 @@ class Sync(Log):
         with Sync._lock_watches: # FIXME read write locks !
             for repo, watch in cls._watches.items():
                 for client in watch[2]:
+                    print "PM to", client, 'for', repo
                     cls.sync_client.add((PullMSG(repo), client))
                 # How are pulls from multiple machines handled? Need to send
                 # msg to temporarily stop the service(BroadCast or Send)
@@ -305,6 +306,7 @@ class Sync(Log):
                 cls.cw("Trying to re-add a remote") # FIXME: stale remote ?
             pull_clients = cls._watches[repo][2]
             pull_clients.append(_from[0])
+            print cls._watches
 
     @classmethod
     def initiatePull(cls, _from, repo):
